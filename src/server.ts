@@ -19,7 +19,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-app.use('/api', vehicleRoutes);  // เพิ่มตรงนี้
+app.use('/api', vehicleRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
