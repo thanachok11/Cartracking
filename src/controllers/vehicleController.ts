@@ -10,7 +10,7 @@ const ctLogin = async (): Promise<string> => {
         params: {
             x: "x",
             account: "PORC00001",
-            username: "", // ใส่ username ให้ครบ
+            username: "", 
             password: "Porchoen.2014",
             locale: "en-ZA",
             otp: "",
@@ -37,7 +37,7 @@ const ctLogin = async (): Promise<string> => {
 // 2. ฟังก์ชันหลัก: login → ดึงรถ → ดึงตำแหน่ง
 export const getVehiclesWithPositions = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ✅ Step 1: Login
+        // Step 1: Login
         const sessionCookie = await ctLogin();
 
         const headers = {
@@ -45,7 +45,7 @@ export const getVehiclesWithPositions = async (req: Request, res: Response): Pro
             'Cookie': sessionCookie
         };
 
-        // ✅ Step 2: ดึงรายชื่อรถ
+        // Step 2: ดึงรายชื่อรถ
         const fleetResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {
@@ -66,7 +66,7 @@ export const getVehiclesWithPositions = async (req: Request, res: Response): Pro
 
         const vehicleIds: string[] = vehicles.map((v: any) => v.vehicle_id);
 
-        // ✅ Step 3: ดึงตำแหน่งรถ
+        // Step 3: ดึงตำแหน่งรถ
         const positionsResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {
