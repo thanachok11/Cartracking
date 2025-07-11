@@ -3,3 +3,27 @@
   padding: 0;
   box-sizing: border-box;
 }
+/* App.css */
+
+.app-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  /* ✅ สำคัญ: ให้ container สูงเต็มจอ */
+}
+
+.app-container.sidebar-open .map-container-wrapper{
+  margin-left: 250px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+.app-container.sidebar-closed .map-container-wrapper {
+  margin-left: 70px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+.main-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}

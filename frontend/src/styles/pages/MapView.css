@@ -1,0 +1,32 @@
+/* ในไฟล์ MapView.css หรือ styles/pages/MapView.css */
+.map-container-wrapper {
+    height: 100vh;
+    width: 100%;
+    margin-top: 58px;
+    /* เว้นที่ให้ Navbar */
+    position: relative;
+}
+
+.leaflet-container {
+    height: 100%;
+    width: 100%;
+}
+
+.popup-content {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.popup-button {
+    margin-top: 8px;
+    padding: 4px 10px;
+    background-color: #1d72b8;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.popup-button:hover {
+    background-color: #155d91;
+}

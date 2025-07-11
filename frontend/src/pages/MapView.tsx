@@ -1,20 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { fetchVehiclePositions, VehiclePosition } from '../api/components/MapApi';
 
-interface VehiclePosition {
-    vehicle_id: string;
-    latitude: string;
-    longitude: string;
-    registration: string;
-    speed: number;
-    ignition: string;
-    event_description: string;
-    running_status: string;
-}
+import '../styles/pages/MapView.css'; // 👈 import CSS ที่คุณสร้างไว้
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -33,11 +24,8 @@ const MapView = () => {
 
         const fetchPositions = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_API_URL}/vehicles`);
-                console.log('Res', response.data);
-
-                const positionsArray: VehiclePosition[] = Object.values(response.data);
-                setVehicles(positionsArray);
+                const positions = await fetchVehiclePositions();
+                setVehicles(positions);
                 hasFetched.current = true;
             } catch (error) {
                 console.error('Error fetching vehicle positions:', error);
@@ -45,60 +33,52 @@ const MapView = () => {
         };
 
         fetchPositions();
-
     }, []);
+
     const handleClick = (vehicleId: string) => {
         const today = new Date().toISOString().split('T')[0];
         navigate(`/vehicle/${vehicleId}/view?date=${today}`);
     };
-      
-    
 
     return (
-        <MapContainer
-            center={[18.7904, 98.9847]}
-            zoom={6}
-            style={{ height: '100vh', width: '100%' }}
-        >
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; OpenStreetMap contributors'
-            />
+        <div className="map-container-wrapper">
+            <MapContainer
+                center={[18.7904, 98.9847]}
+                zoom={6}
+                className="leaflet-container"
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; OpenStreetMap contributors'
+                />
 
-            {vehicles.map(vehicle => (
-                <Marker
-                    key={vehicle.vehicle_id}
-                    position={[
-                        parseFloat(vehicle.latitude),
-                        parseFloat(vehicle.longitude)
-                    ]}
-                >
-                    <Popup>
-                        <div>
-                            <strong>ทะเบียน: {vehicle.registration}</strong> <br />
-                            ความเร็ว: {vehicle.speed} km/h <br />
-                            เครื่องยนต์: {vehicle.ignition === '1' ? 'ON' : 'OFF'} <br />
-                            สถานะ: {vehicle.event_description} <br />
-                            ระยะเวลาทำงาน: {vehicle.running_status} <br />
-                            <button
-                                onClick={() => handleClick(vehicle.vehicle_id)}
-                                style={{
-                                    marginTop: '8px',
-                                    padding: '4px 10px',
-                                    backgroundColor: '#1d72b8',
-                                    color: 'white',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    borderRadius: 4
-                                }}
-                            >
-                                ดูรายละเอียด
-                            </button>
-                        </div>
-                    </Popup>
-                </Marker>
-            ))}
-        </MapContainer>
+                {vehicles.map(vehicle => (
+                    <Marker
+                        key={vehicle.vehicle_id}
+                        position={[
+                            parseFloat(vehicle.latitude),
+                            parseFloat(vehicle.longitude)
+                        ]}
+                    >
+                        <Popup className="popup-content">
+                            <div>
+                                <strong>ทะเบียน: {vehicle.registration}</strong> <br />
+                                ความเร็ว: {vehicle.speed} km/h <br />
+                                เครื่องยนต์: {vehicle.ignition === '1' ? 'ON' : 'OFF'} <br />
+                                สถานะ: {vehicle.event_description} <br />
+                                ระยะเวลาทำงาน: {vehicle.running_status} <br />
+                                <button
+                                    className="popup-button"
+                                    onClick={() => handleClick(vehicle.vehicle_id)}
+                                >
+                                    ดูรายละเอียด
+                                </button>
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
+        </div>
     );
 };
 

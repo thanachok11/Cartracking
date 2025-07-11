@@ -6,8 +6,6 @@ import {
     faSignInAlt,
     faUserPlus,
     faCaretDown,
-    faBars,
-    faTimes,
     faCog,
 
 
@@ -29,18 +27,15 @@ const Header: React.FC<NavbarProps> = ({
 }) => {
     const [user, setUser] = useState<{
         name: string;
-        username: string;
         email: string;
         role: string;
         profileImg: string;
-        nameStore: string;
     } | null>(null);
 
     const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
     const [isRegisterModalVisible, setIsRegisterModalVisible] = useState(false);
     const [userdropdown, setUserDropdown] = useState(false);
-    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
+    const notificationRef = useRef<HTMLDivElement>(null);
     const userRef = useRef<HTMLDivElement>(null);
     const [showLoginAlert, setShowLoginAlert] = useState(false);
 
@@ -53,10 +48,8 @@ const Header: React.FC<NavbarProps> = ({
                 const decoded: any = jwtDecode(token);
                 setUser({
                     name: decoded.name,
-                    username: decoded.username,
                     email: decoded.email,
                     role: decoded.role,
-                    nameStore: decoded.nameStore,
                     profileImg: decoded.profile_img || "default-avatar.png",
                 });
             } catch (error) {
@@ -75,9 +68,26 @@ const Header: React.FC<NavbarProps> = ({
         navigate(path);
     };
 
-    const toggleDropdown = (menu: string) => {
-        setOpenDropdown(openDropdown === menu ? null : menu);
-    };
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+
+            // ตรวจว่าคลิกอยู่นอก notification dropdown จริงหรือไม่
+            if (
+                notificationRef.current &&
+                !notificationRef.current.contains(target)
+            ) 
+
+            if (!target.closest(".user-dropdown")) {
+                setUserDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
     const handleUserSettings = () => {
         navigate("/settingProfile");
     };
@@ -92,15 +102,13 @@ const Header: React.FC<NavbarProps> = ({
             {showLoginAlert && (
                 <div className="Alert-modal-overlay">
                     <div className="Alert-modal">
-                        <p className="Alert-title-login">กรุณาเข้าสู่ระบบก่อนใช้งานเมนูนี้</p>
-                        <button className="Alert-modal-close" onClick={() => setShowLoginAlert(false)}>ปิด</button>
+                        <p className="Alert-title-login">Please Login before use this feature</p>
+                        <button className="Alert-modal-close" onClick={() => setShowLoginAlert(false)}>close</button>
                     </div>
                 </div>
             )}
             {/* Navbar */}
             <nav className="navbar">
-        
-
                 <div className="navbar-content">
                     <div className={`iconName ${isSidebarOpen ? "shifted" : "closed"}`}>
                         PORCHOEN 2014 COMPANY LIMITED
@@ -118,7 +126,7 @@ const Header: React.FC<NavbarProps> = ({
                                     <div className="user-info">
                                         <img src={user.profileImg} alt="User" className="avatar" />
                                         <div className="user-details">
-                                            <span className="username">{user?.username || user?.name}</span>
+                                            <span className="username">{user?.email || user?.name}</span>
                                             <span className="status-online">🟢 Online</span>
                                         </div>
                                         <FontAwesomeIcon icon={faCaretDown} className="icon caret-icon" />
@@ -135,11 +143,11 @@ const Header: React.FC<NavbarProps> = ({
                                                 }}
                                                 className="settings-button"
                                             >
-                                                <FontAwesomeIcon icon={faCog} className="icon settings-icon" /> ตั้งค่าผู้ใช้
+                                                <FontAwesomeIcon icon={faCog} className="icon settings-icon" /> User Setting
                                             </button>
                                             {/* ปุ่มออกจากระบบ */}
                                             <button onClick={handleLogout} className="logout-button">
-                                                <FontAwesomeIcon icon={faSignOutAlt} className="icon logout-icon" /> ออกจากระบบ
+                                                <FontAwesomeIcon icon={faSignOutAlt} className="icon logout-icon" /> Logout
                                             </button>
                                         </div>
                                     )}
@@ -147,10 +155,10 @@ const Header: React.FC<NavbarProps> = ({
                             </>
                         ) : (
                             <>
-                                <button onClick={() => setIsLoginModalVisible(true)} className="login-button" name="login">
+                                <button onClick={() => setIsLoginModalVisible(true)} className="login-button-header" name="login">
                                     <FontAwesomeIcon icon={faSignInAlt} className="icon" /> <span>Login</span>
                                 </button>
-                                <button onClick={() => setIsRegisterModalVisible(true)} className="register-button" name="register">
+                                <button onClick={() => setIsRegisterModalVisible(true)} className="register-button-header" name="register">
                                     <FontAwesomeIcon icon={faUserPlus} className="icon" /> <span>Register</span>
                                 </button>
                             </>

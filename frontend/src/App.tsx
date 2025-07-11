@@ -4,7 +4,8 @@ import Header from "./components/layout/Header";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import VehicleTimelinePage from "./pages/VehicleTimeline";
 import MapView from "./pages/MapView";
-import HomePage from "./pages/Homepage";
+import HomePage from "./pages/LandingPage";
+import Sidebar from "./components/layout/Sidebar";
 
 import "./App.css";
 
@@ -14,7 +15,7 @@ axios.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 403) {
       localStorage.removeItem("token");
-      window.location.href = "/"; // เปลี่ยนหน้าแบบ force reload
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }
@@ -22,21 +23,27 @@ axios.interceptors.response.use(
 
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const token = localStorage.getItem("token");
+
   return (
     <Router>
       <div
-        className={`app-container ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"
-          }`}
+        className={`app-container ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}
       >
-        <Header
-          toggleSidebar={toggleSidebar}
-          isSidebarOpen={isSidebarOpen}
-        />
+        {/* ✅ แสดง Header เฉพาะเมื่อยังไม่ได้ login */}
+        {!token && (
+          <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+        )}
+
+        {/* ✅ แสดง Sidebar เฉพาะเมื่อ login แล้ว */}
+        {token && (
+          <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+        )}
+
         <div className="main-content">
           <Routes>
             <Route path="/" element={<HomePage />} />

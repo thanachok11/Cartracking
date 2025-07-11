@@ -13,12 +13,19 @@
 }
 
 /* ========== HERO SECTION ========== */
-.homepage-hero-section {
+/* .homepage-hero-section {
     margin-top: 70px;
     padding: 10px 10px;
     text-align: center;
     background: linear-gradient(to right, #1e3a8a, #3b82f6);
     color: white;
+} */
+
+.hero-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 50px auto;
 }
 
 .homepage-hero-content h1 {
@@ -322,4 +329,5 @@ input:checked+.radio-dot {
 
 .fade-in-section.visible {
     opacity: 1;
-    transform: translateY(0); }
+    transform: translateY(0);
+}

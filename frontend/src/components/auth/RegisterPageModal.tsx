@@ -1,7 +1,6 @@
-// RegisterModal.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../../api/auth/auth'; // Import ฟังก์ชัน API
+import { registerUser } from '../../api/auth/auth';
 import '../../styles/components/auth/RegisterModal.css';
 
 interface RegisterProps {
@@ -13,14 +12,15 @@ const RegisterModal: React.FC<RegisterProps> = ({ isVisible, onClose }) => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        username: '',
         firstName: '',
         lastName: '',
-        nameStore: '',
     });
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    
     const navigate = useNavigate();
 
     if (!isVisible) return null;
@@ -45,8 +45,14 @@ const RegisterModal: React.FC<RegisterProps> = ({ isVisible, onClose }) => {
             return;
         }
 
+        setLoading(true);
         try {
-            const data = await registerUser(formData.email, formData.password, formData.username, formData.firstName, formData.lastName, formData.nameStore);
+            await registerUser(
+                formData.email,
+                formData.password,
+                formData.firstName,
+                formData.lastName
+            );
             setSuccessMessage('Registration successful! Redirecting to login...');
             setError('');
 
@@ -57,66 +63,82 @@ const RegisterModal: React.FC<RegisterProps> = ({ isVisible, onClose }) => {
         } catch (err: any) {
             setError(err.message || 'Error registering user. Please try again.');
             setSuccessMessage('');
+        } finally {
+            setLoading(false);
         }
     };
+    const handleClose = () => {
+        setIsClosing(true); // เริ่ม animation ออก
 
+        // รอให้ animation จบก่อนค่อยปิด
+        setTimeout(() => {
+            setIsClosing(false); // reset สำหรับรอบหน้า
+            onClose();           // ปิด modal จริง
+        }, 300); // ตรงกับเวลาใน animation CSS
+    };
     return (
-            <div className="modal-overlay">
-                <div className="modal-content">
-                    <button onClick={onClose} className="close-button">X</button>
-                    <form onSubmit={handleRegister} className="form">
-                        <h1 className="title-register">Register</h1>
+        <div className="register-modal-overlay">
+            <div className="register-modal-content">
+            <div className={`register-modal ${isClosing ? 'slide-out' : 'slide-in'}`}>
+                <button onClick={handleClose} className="register-close-button">×</button>
+                <form onSubmit={handleRegister} className="register-form">
+                    <h2 className="register-title">Register</h2>
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="register-input"
+                        required
+                    />
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="register-input"
+                        required
+                    />
+                    <input
+                        type="text"
+                        name="firstName"
+                        placeholder="First name"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        className="register-input"
+                        required
+                    />
+                    <input
+                        type="text"
+                        name="lastName"
+                        placeholder="Last name"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className="register-input"
+                        required
+                    />
+                    <div className="register-checkbox-container">
                         <input
-                            type="email"
-                            name="email"
-                            placeholder="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="input"
-                            required
+                            type="checkbox"
+                            id="acceptTerms"
+                            checked={acceptedTerms}
+                            onChange={handleCheckboxChange}
                         />
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="input"
-                            required
-                        />
-                        <input
-                            type="text"
-                            name="firstName"
-                            placeholder="first name"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            className="input"
-                            required
-                        />
-                        <input
-                            type="text"
-                            name="lastName"
-                            placeholder="last name"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            className="input"
-                            required
-                        />
-                        <div className="checkbox-container">
-                            <input
-                                type="checkbox"
-                                id="acceptTerms"
-                                checked={acceptedTerms}
-                                onChange={handleCheckboxChange}
-                            />
-                            <label className="label" htmlFor="acceptTerms">
-                                I accept the terms and conditions
-                            </label>
-                        </div>
-                        <button type="submit" className="button">Register</button>
-                    </form>
+                        <label htmlFor="acceptTerms" className="register-label">
+                            I accept the terms and conditions
+                        </label>
+                    </div>
+                    <button type="submit" className="register-button" disabled={loading}>
+                        {loading ? 'Registering...' : 'Register'}
+                    </button>
+                    {error && <p className="register-error">{error}</p>}
+                    {successMessage && <p className="register-success">{successMessage}</p>}
+                </form>
                 </div>
             </div>
+        </div>
     );
 };
 

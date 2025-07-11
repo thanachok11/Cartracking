@@ -1,26 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import "../styles/pages/Home.css";
+import { sendContactMessage } from "../api/components/contactApi";
+import PolicyModal from "../components/landingPage/PolicyModal";
 
-// Custom Hook
+import "../styles/pages/LandingPage.css";
+
+// ✅ Custom Hook ถูกต้องแล้ว
 function useInView(threshold = 0.2) {
     const ref = useRef<HTMLDivElement | null>(null);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
+        const element = ref.current;
         const observer = new IntersectionObserver(
             ([entry]) => setIsVisible(entry.isIntersecting),
             { threshold }
         );
 
-        if (ref.current) observer.observe(ref.current);
+        if (element) observer.observe(element);
+
         return () => {
-            if (ref.current) observer.unobserve(ref.current);
+            if (element) observer.unobserve(element);
         };
     }, [threshold]);
 
     return [ref, isVisible] as const;
 }
 
+// ✅ ภาพต่าง ๆ
 const galleryImages = [
     'https://res.cloudinary.com/dboau6axv/image/upload/v1752055539/IMG_3265_dxyju4.jpg',
     'https://res.cloudinary.com/dboau6axv/image/upload/v1752055537/IMG_3271_hbpjvf.jpg',
@@ -41,6 +47,9 @@ const Home: React.FC = () => {
     const [heroRef, heroVisible] = useInView();
     const [serviceRef, serviceVisible] = useInView();
     const [contactRef, contactVisible] = useInView();
+    const [showPolicy, setShowPolicy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
+
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -55,7 +64,35 @@ const Home: React.FC = () => {
     const handleRadioChange = (index: number) => {
         setCurrentIndex(index);
     };
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        message: "",
+    });
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setSuccess("");
+        setError("");
+
+        try {
+            await sendContactMessage(formData);
+            setSuccess("Message sent successfully! We'll contact you soon.");
+            setFormData({ name: "", email: "", message: "" });
+        } catch (err: any) {
+            setError("Failed to send message. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    };
     return (
         <div className="homepage">
             {/* ✅ Hero Section */}
@@ -64,12 +101,14 @@ const Home: React.FC = () => {
                 className={`homepage-hero-section fade-in-section ${heroVisible ? 'visible' : ''}`}
             >
                 <div className="homepage-hero-content">
-                    <h1>Welcome to PORCHOEN 2014 COMPANY LIMITED</h1>
-                    <h2>
-                        We specialize in container transportation services across Thailand, ensuring secure, efficient, and on-time delivery with professional logistics solutions tailored to your needs.
-                    </h2>
+                    <img
+                        src="https://res.cloudinary.com/dboau6axv/image/upload/v1752219530/%E0%B8%AA%E0%B8%B3%E0%B9%80%E0%B8%99%E0%B8%B2%E0%B8%82%E0%B8%AD%E0%B8%87_final_dlbwgu.png"
+                        alt="Hero Banner"
+                        className="hero-image"
+                    />
                 </div>
             </section>
+
 
             {/* ✅ Slideshow */}
             <section className="homepage-slideshow-section">
@@ -87,7 +126,12 @@ const Home: React.FC = () => {
                             </div>
                         ))}
                     </div>
-
+                    <div className="homepage-hero-content">
+                        <h1>Welcome to PORCHOEN 2014 COMPANY LIMITED</h1>
+                        <h2>
+                            We specialize in container transportation services across Thailand, ensuring secure, efficient, and on-time delivery with professional logistics solutions tailored to your needs.
+                        </h2>
+                    </div>
                     <div className="homepage-radio-indicators">
                         {galleryImages.map((_, index) => (
                             <label key={index}>
@@ -146,32 +190,44 @@ const Home: React.FC = () => {
                 className={`homepage-section contact-section fade-in-section ${contactVisible ? 'visible' : ''}`}
             >
                 <h2 className="homepage-section-title">Contact Us</h2>
-                <form
-                    className="contact-form"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        alert("Thank you! We'll get back to you via email.");
-                    }}
-                >
-                    <input type="text" name="name" placeholder="Your Name" required />
-                    <input type="email" name="email" placeholder="Your Email" required />
-                    <textarea name="message" rows={5} placeholder="Your Message..." required />
-                    <button type="submit">Send Message</button>
+                <form className="contact-form" onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Your Name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                    />
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Your Email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                    />
+                    <textarea
+                        name="message"
+                        rows={5}
+                        placeholder="Your Message..."
+                        value={formData.message}
+                        onChange={handleChange}
+                        required
+                    />
+                    <button type="submit" disabled={loading}>
+                        {loading ? "Sending..." : "Send Message"}
+                    </button>
+                    {success && <p className="success-message">{success}</p>}
+                    {error && <p className="error-message">{error}</p>}
                 </form>
 
                 <div className="contact-channels">
                     <h3>Other Ways to Reach Us</h3>
                     <ul>
-                        <li>
-                            <strong>Email:</strong>{' '}
-                            <a href="mailto:porchoen2014@gmail.com">porchoen2014@gmail.com</a>
-                        </li>
-                        <li>
-                            <strong>LINE:</strong> <span>@porchoen2014</span>
-                        </li>
-                        <li>
-                            <strong>WeChat:</strong> <span>porchoen2014</span>
-                        </li>
+                        <li><strong>Email:</strong> <a href="mailto:porchoen2014@gmail.com">porchoen2014@gmail.com</a></li>
+                        <li><strong>LINE:</strong> <span>@porchoen2014</span></li>
+                        <li><strong>WeChat:</strong> <span>porchoen2014</span></li>
                         <li>
                             <strong>Location:</strong>{' '}
                             <a
@@ -179,8 +235,7 @@ const Home: React.FC = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
-                                PORCHOEN 2014 COMPANY LIMITED
-                                 , 101, ต.เวียง อ.เชียงแสน จ.เชียงราย
+                                PORCHOEN 2014 COMPANY LIMITED, 101, ต.เวียง อ.เชียงแสน จ.เชียงราย
                             </a>
                         </li>
                     </ul>
@@ -188,8 +243,23 @@ const Home: React.FC = () => {
             </section>
 
             <footer className="homepage-footer">
-                <div>
-                    <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a>
+                <div className="footer-links" style={{ textAlign: "center", marginTop: "3rem" }}>
+                    <span onClick={() => setShowPolicy(true)} className="footer-link">Privacy Policy</span> |
+                    <span onClick={() => setShowTerms(true)} className="footer-link">Terms of Service</span>
+
+                    {/* Modals */}
+                    <PolicyModal
+                        isVisible={showPolicy}
+                        onClose={() => setShowPolicy(false)}
+                        title="Privacy Policy"
+                    />
+
+                    <PolicyModal
+                        isVisible={showTerms}
+                        onClose={() => setShowTerms(false)}
+                        title="Terms of Service"
+                    />
+
                 </div>
                 <p>© PORCHOEN 2014 COMPANY LIMITED.</p>
             </footer>

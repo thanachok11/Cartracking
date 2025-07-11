@@ -4,7 +4,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import connectDB from './utils/database';
-
+import authRoutes from './routes/authRoutes';
 import vehicleRoutes from './routes/vehicleRoutes';
 
 const app = express();
@@ -18,7 +18,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
-
+app.use('/api',authRoutes);
 app.use('/api', vehicleRoutes);  // เพิ่มตรงนี้
 
 app.get('/', (req, res) => {
