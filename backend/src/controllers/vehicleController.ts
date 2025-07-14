@@ -207,7 +207,7 @@ export const getGeofences = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        const geofences = geofenceResponse.data.result?.ct_fleet_get_geofence_v2;
+        const geofences = geofenceResponse.data.result?.ct_fleet_get_geofence;
 
         if (!geofences) {
             res.status(404).json({ error: 'ไม่พบข้อมูล Geofence' });
