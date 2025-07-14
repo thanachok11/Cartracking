@@ -33,7 +33,42 @@ const ctLogin = async (): Promise<string> => {
     const sessionCookie = setCookieHeader.map((c: string) => c.split(';')[0]).join('; ');
     return sessionCookie;
 };
+export const getVehicles = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // ✅ Step 1: Login แล้วได้ Cookie
+        const sessionCookie = await ctLogin();
 
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': sessionCookie,
+        };
+
+        // ✅ Step 2: ดึงรายชื่อรถ
+        const fleetResponse = await axios.post(
+            'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
+            {
+                jsonrpc: "2.0",
+                method: "ct_fleet_get_vehiclelist_v3",
+                params: {},
+                id: 10,
+            },
+            { headers }
+        );
+
+        const vehicles = fleetResponse.data?.result?.ct_fleet_get_vehiclelist;
+
+        if (!Array.isArray(vehicles)) {
+            res.status(500).json({ error: 'ข้อมูลรถไม่ถูกต้อง' });
+            return;
+        }
+
+        // ✅ ส่งเฉพาะข้อมูลรถกลับไป
+        res.json(vehicles);
+    } catch (error: any) {
+        console.error('เกิดข้อผิดพลาดในการดึงข้อมูลรถ:', error.message || error);
+        res.status(500).json({ error: 'ไม่สามารถดึงข้อมูลรถได้' });
+    }
+};
 // 2. ฟังก์ชันหลัก: login → ดึงรถ → ดึงตำแหน่ง
 export const getVehiclesWithPositions = async (req: Request, res: Response): Promise<void> => {
     try {

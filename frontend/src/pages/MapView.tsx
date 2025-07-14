@@ -1,19 +1,18 @@
+// GoogleMapView.tsx
 import React, { useEffect, useState } from 'react';
 import {
     GoogleMap,
     Marker,
-    InfoWindow,
     StreetViewPanorama,
+    InfoWindow,
     useJsApiLoader,
 } from '@react-google-maps/api';
 import { useNavigate } from 'react-router-dom';
 import {
-    fetchVehiclePositions,
-    fetchDrivers,
-    fetchGeofences,
+    fetchVehicle,
     VehiclePosition,
-    Driver,
     Geofence,
+    fetchGeofences,
 } from '../api/components/MapApi';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStreetView } from '@fortawesome/free-solid-svg-icons';
@@ -32,10 +31,14 @@ const center = {
 
 const GoogleMapView = () => {
     const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
-    const [drivers, setDrivers] = useState<Driver[]>([]);
     const [geofences, setGeofences] = useState<Geofence[]>([]);
+    const [hoveredVehicleId, setHoveredVehicleId] = useState<string | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<VehiclePosition | null>(null);
     const [showStreetView, setShowStreetView] = useState(false);
+
+    const [popupVehicle, setPopupVehicle] = useState<VehiclePosition | null>(null);
+    const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
+
     const navigate = useNavigate();
 
     const { isLoaded } = useJsApiLoader({
@@ -45,24 +48,16 @@ const GoogleMapView = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [vehicleData, driverData, geofenceData] = await Promise.all([
-                    fetchVehiclePositions(),
-                    fetchDrivers(),
+                const [vehicleData, geofenceData] = await Promise.all([
+                    fetchVehicle(),
                     fetchGeofences(),
                 ]);
-
                 setVehicles(vehicleData);
-                setDrivers(driverData);
                 setGeofences(geofenceData);
-
-                console.log('vehicles', vehicleData);
-                console.log('drivers', driverData);
-                console.log('geofences', geofenceData);
             } catch (error) {
                 console.error('Error loading data:', error);
             }
         };
-
         loadData();
     }, []);
 
@@ -71,48 +66,61 @@ const GoogleMapView = () => {
         navigate(`/vehicle/${vehicleId}/view?date=${today}`);
     };
 
-    const getDriverName = (vehicleId: string): string | undefined => {
-        const driver = drivers.find(d => d.vehicle_id === vehicleId);
-        return driver?.driver_name;
+    const getDriverName = (vehicle: VehiclePosition) => {
+        return vehicle.driver_name?.name || null;
     };
+
+    const hoveredVehicle = vehicles.find(v => v.vehicle_id === hoveredVehicleId) || null;
 
     if (!isLoaded) return <div>Loading Map...</div>;
 
     return (
         <div className="map-page">
             {/* Sidebar */}
-            <div className="sidebar">
+            <div className="vehicle-panel">
                 {vehicles.map(vehicle => (
                     <div
                         key={vehicle.vehicle_id}
-                        className={`vehicle-item ${selectedVehicle?.vehicle_id === vehicle.vehicle_id ? 'active' : ''}`}
-                        onMouseEnter={() => {
-                            setSelectedVehicle(vehicle);
-                            setShowStreetView(false);
+                        className="vehicle-item"
+                        onMouseEnter={(e) => {
+                            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                            setPopupVehicle(vehicle);
+                            setPopupPosition({ top: rect.top, left: rect.right + 10 });
+                            setHoveredVehicleId(vehicle.vehicle_id);
+                        }}
+                        onMouseLeave={() => {
+                            setPopupVehicle(null);
+                            setPopupPosition(null);
+                            setHoveredVehicleId(null);
                         }}
                         onClick={() => handleClick(vehicle.vehicle_id)}
                     >
-                        <div className="vehicle-reg">
-                            {vehicle.registration}
-                        </div>
-
-                        {/* แสดงรายละเอียดเมื่อ hover หรือ active */}
-                        {selectedVehicle?.vehicle_id === vehicle.vehicle_id && (
-                            <div className="vehicle-details">
-                                <div>Speed: {vehicle.speed} km/h</div>
-                                <div>Status: {vehicle.event_description}</div>
-                                <div>Ignition: {vehicle.ignition === '1' ? 'ON' : 'OFF'}</div>
-                                <div>Running Time: {vehicle.running_status}</div>
-                                {getDriverName(vehicle.vehicle_id) && (
-                                    <div>Driver: {getDriverName(vehicle.vehicle_id)}</div>
-                                )}
-                            </div>
-                        )}
+                        <strong>{vehicle.registration}</strong>
                     </div>
                 ))}
             </div>
 
-            {/* Map Area */}
+            {popupVehicle && popupPosition && (
+                <div
+                    className="vehicle-popup-fixed"
+                    style={{
+                        top: popupPosition.top,
+                        left: popupPosition.left,
+                        position: 'fixed',
+                    }}
+                >
+                    <div><strong>ทะเบียน:</strong> {popupVehicle.registration}</div>
+                    <div><strong>Speed:</strong> {popupVehicle.speed} km/h</div>
+                    <div><strong>Status:</strong> {popupVehicle.event_description}</div>
+                    <div><strong>Ignition:</strong> {popupVehicle.ignition === '1' ? 'ON' : 'OFF'}</div>
+                    <div><strong>Running:</strong> {popupVehicle.running_status}</div>
+                    <div>
+                        <strong>Driver:</strong> {getDriverName(popupVehicle) || <em>ไม่พบข้อมูลคนขับ</em>}
+                    </div>
+                </div>
+            )}
+
+            {/* Map */}
             <div className="map-area">
                 <GoogleMap
                     mapContainerStyle={containerStyle}
@@ -133,6 +141,7 @@ const GoogleMapView = () => {
                         />
                     ))}
 
+                    {/* แสดง InfoWindow เมื่อมีรถถูกเลือก */}
                     {selectedVehicle && (
                         <InfoWindow
                             position={{
@@ -141,24 +150,17 @@ const GoogleMapView = () => {
                             }}
                             onCloseClick={() => setSelectedVehicle(null)}
                         >
-                            <div className="popup-info">
+                            <div style={{ minWidth: 200 }}>
                                 <strong>{selectedVehicle.registration}</strong><br />
-                                Speed: {selectedVehicle.speed} km/h <br />
-                                Ignition: {selectedVehicle.ignition === '1' ? 'ON' : 'OFF'} <br />
-                                Status: {selectedVehicle.event_description} <br />
-                                Running Time: {selectedVehicle.running_status} <br />
-                                {getDriverName(selectedVehicle.vehicle_id) && (
-                                    <>Driver: {getDriverName(selectedVehicle.vehicle_id)}<br /></>
-                                )}
-                                <button
-                                    className="popup-button"
-                                    onClick={() => handleClick(selectedVehicle.vehicle_id)}
-                                >
-                                    ดูรายละเอียด
-                                </button>
+                                Speed: {selectedVehicle.speed} km/h<br />
+                                Status: {selectedVehicle.event_description}<br />
+                                Ignition: {selectedVehicle.ignition === '1' ? 'ON' : 'OFF'}<br />
+                                Running: {selectedVehicle.running_status}<br />
+                                Driver: {getDriverName(selectedVehicle) || <em>ไม่พบข้อมูลคนขับ</em>}
                             </div>
                         </InfoWindow>
                     )}
+
 
                     {selectedVehicle && showStreetView && (
                         <StreetViewPanorama
@@ -174,7 +176,7 @@ const GoogleMapView = () => {
                     )}
                 </GoogleMap>
 
-                {/* ปุ่ม Street View */}
+                {/* Street View Button */}
                 {selectedVehicle && (
                     <button
                         className="streetview-button"

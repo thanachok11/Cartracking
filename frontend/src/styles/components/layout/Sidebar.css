@@ -1,12 +1,15 @@
 .sidebar {
+    position: fixed;
     width: 240px;
-    background-color: #1e293b;
-    color: white;
+    height: calc(100%);
+    background: linear-gradient(135deg, #5e768b, #456686);    color: white;
     transition: width 0.3s;
     height: 100vh;
     display: flex;
     flex-direction: column;
-    position: fixed;
+    border-top-right-radius: 15px;
+    border-bottom-right-radius: 15px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
     z-index: 1000;
 }
 

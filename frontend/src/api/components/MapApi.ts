@@ -9,16 +9,22 @@ export interface VehiclePosition {
     ignition: string;
     event_description: string;
     running_status: string;
+
+    driver_name?: {
+        name: string | null;
+        client_driver_id: string | null;
+    };
 }
 
+
 export interface Driver {
-    [x: string]: string;
-    driver_id: string;
-    driver_name: string;
-    driver_license: string;
-    phone: string;
-    // เพิ่ม field ตามจริงที่ backend ส่งมาได้เลย
+    out_driver_id: string;
+    out_driver_name: string;
+    out_driver_surname: string;
+    out_vehicle_registration: string | null;
+    // เพิ่ม field อื่นถ้าต้องใช้
 }
+
 
 export interface Geofence {
     geofence_id: string;
@@ -30,11 +36,19 @@ export interface Geofence {
     // เพิ่ม field ตามจริงที่ backend ส่งมาได้เลย
 }
 
+export const fetchVehicle = async (): Promise<VehiclePosition[]> => {
+    const response = await axios.get(`${process.env.REACT_APP_API_URL}/car`);
+    const positionsArray: VehiclePosition[] = Object.values(response.data);
+    return positionsArray;
+};
+
+
 export const fetchVehiclePositions = async (): Promise<VehiclePosition[]> => {
     const response = await axios.get(`${process.env.REACT_APP_API_URL}/vehicles`);
     const positionsArray: VehiclePosition[] = Object.values(response.data);
     return positionsArray;
 };
+
 
 export const fetchDrivers = async (): Promise<Driver[]> => {
     const response = await axios.get(`${process.env.REACT_APP_API_URL}/drivers`);
