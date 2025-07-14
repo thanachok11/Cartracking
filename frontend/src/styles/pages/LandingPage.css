@@ -32,6 +32,7 @@
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 1rem;
+    text-align: center;
 }
 
 .homepage-hero-content h2 {
@@ -304,7 +305,7 @@ input:checked+.radio-dot {
 /* ========== FOOTER ========== */
 .homepage-footer {
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 10px;
     background-color: #1e293b;
     color: #cbd5e1;
     font-size: 0.9rem;

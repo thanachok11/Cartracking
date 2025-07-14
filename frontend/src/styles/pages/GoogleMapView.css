@@ -97,17 +97,46 @@
 .streetview-button:hover {
     background-color: #f9f9f9;
 }
+
 .vehicle-popup-fixed {
-    width: 220px;
-    background-color: #fff;
-    padding: 10px 12px;
-    border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    position: fixed;
+    background: white;
     border: 1px solid #ddd;
-    z-index: 10000;
-    animation: slideRight 0.2s ease-in-out;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    padding: 1.5rem;
+    z-index: 9999;
+    width: 300px;
+    font-family: 'Noto Sans Thai', sans-serif;
+    color: #333;
 }
 
+.vehicle-popup-fixed strong {
+    color: #007bff;
+    font-weight: 600;
+    display: inline-block;
+    width: 120px;
+}
+
+.vehicle-popup-fixed em {
+    color: #999;
+}
+
+.vehicle-status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    background-color: #f0f0f0;
+    color: #555;
+    margin-top: 5px;
+}
+
+.vehicle-popup-fixed hr {
+    margin: 0.75rem 0;
+    border: none;
+    border-top: 1px solid #eee;
+}
 @keyframes slideRight {
     from {
         transform: translateX(-10px);

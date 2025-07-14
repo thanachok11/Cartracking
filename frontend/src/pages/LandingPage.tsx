@@ -102,13 +102,18 @@ const Home: React.FC = () => {
             >
                 <div className="homepage-hero-content">
                     <img
-                        src="https://res.cloudinary.com/dboau6axv/image/upload/v1752219530/%E0%B8%AA%E0%B8%B3%E0%B9%80%E0%B8%99%E0%B8%B2%E0%B8%82%E0%B8%AD%E0%B8%87_final_dlbwgu.png"
+                        src="https://res.cloudinary.com/dboau6axv/image/upload/v1752492378/head_jpq86y.png"
                         alt="Hero Banner"
                         className="hero-image"
                     />
                 </div>
             </section>
-
+            <div className="homepage-hero-content">
+                <h1>Welcome to PORCHOEN 2014 COMPANY LIMITED</h1>
+                <h2>
+                    We specialize in container transportation services across Thailand, ensuring secure, efficient, and on-time delivery with professional logistics solutions tailored to your needs.
+                </h2>
+            </div>
 
             {/* ✅ Slideshow */}
             <section className="homepage-slideshow-section">
@@ -126,12 +131,7 @@ const Home: React.FC = () => {
                             </div>
                         ))}
                     </div>
-                    <div className="homepage-hero-content">
-                        <h1>Welcome to PORCHOEN 2014 COMPANY LIMITED</h1>
-                        <h2>
-                            We specialize in container transportation services across Thailand, ensuring secure, efficient, and on-time delivery with professional logistics solutions tailored to your needs.
-                        </h2>
-                    </div>
+
                     <div className="homepage-radio-indicators">
                         {galleryImages.map((_, index) => (
                             <label key={index}>

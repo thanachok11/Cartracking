@@ -1,16 +1,18 @@
 import { useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
+import {
+    GoogleMap,
+    Marker,
+    InfoWindow,
+    useJsApiLoader,
+    DirectionsRenderer,
+} from '@react-google-maps/api';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Hook ใช้กับ react-router
+import '../styles/pages/MapView.css';
 function useQuery() {
     return new URLSearchParams(useLocation().search);
 }
 
-// Format Date
 function formatDate(inputDate: string | undefined) {
     if (!inputDate) return '-';
     const d = new Date(inputDate);
@@ -20,20 +22,10 @@ function formatDate(inputDate: string | undefined) {
     });
 }
 
-// แปลงค่าน้ำมัน
 function convertFuelRawToLiters(rawValue: number) {
     return rawValue * 0.4;
 }
 
-// Leaflet icon config
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-// MAIN COMPONENT
 const VehicleView = () => {
     const { id } = useParams<{ id: string }>();
     const query = useQuery();
@@ -42,15 +34,17 @@ const VehicleView = () => {
     const [timeline, setTimeline] = useState<any>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [eventAddresses, setEventAddresses] = useState<Record<number, string>>({});
+    const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
 
-    // ref บอกว่า fetch timeline แล้ว
     const hasFetchedTimeline = useRef(false);
-    // ref บอกว่า fetch addresses แล้ว
     const hasFetchedAddresses = useRef(false);
 
-    const [eventAddresses, setEventAddresses] = useState<Record<number, string>>({});
+    const { isLoaded } = useJsApiLoader({
+        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+        libraries: ['places'],
+    });
 
-    // Fetch timeline data
     useEffect(() => {
         if (!id || !date) return;
         if (hasFetchedTimeline.current) return;
@@ -87,8 +81,7 @@ const VehicleView = () => {
 
         const fetchAllAddresses = async () => {
             const newAddresses: Record<number, string> = {};
-
-            const events = timeline.events.slice(-10); // ✅ ใช้แค่ 10 เหตุการณ์ล่าสุด
+            const events = timeline.events.slice(-10);
 
             for (let i = 0; i < events.length; i++) {
                 const event = events[i];
@@ -113,7 +106,6 @@ const VehicleView = () => {
                 }
 
                 setEventAddresses({ ...newAddresses });
-
                 await new Promise((r) => setTimeout(r, 1000));
             }
 
@@ -123,8 +115,43 @@ const VehicleView = () => {
 
         fetchAllAddresses();
     }, [timeline?.events]);
-    
-    // Map sensorNumber → sensorName
+
+    // สร้างเส้นทางการขับขี่จาก trip ล่าสุด
+    useEffect(() => {
+        if (!timeline?.timeline || timeline.timeline.length === 0 || !isLoaded) return;
+
+        const lastTrip = timeline.timeline[timeline.timeline.length - 1];
+        const startLat = parseFloat(lastTrip.trip_start_valid_latitude);
+        const startLng = parseFloat(lastTrip.trip_start_valid_longitude);
+        const endLat = parseFloat(lastTrip.trip_end_valid_latitude);
+        const endLng = parseFloat(lastTrip.trip_end_valid_longitude);
+
+        if (
+            isNaN(startLat) ||
+            isNaN(startLng) ||
+            isNaN(endLat) ||
+            isNaN(endLng)
+        ) {
+            return;
+        }
+
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route(
+            {
+                origin: { lat: startLat, lng: startLng },
+                destination: { lat: endLat, lng: endLng },
+                travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    setDirectionsResponse(result);
+                } else {
+                    console.error(`Directions request failed due to ${status}`);
+                }
+            }
+        );
+    }, [timeline?.timeline, isLoaded]);
+
     const sensorMap =
         timeline?.sensorByNumber?.reduce((acc: Record<string, string>, sensor: any) => {
             acc[sensor.sensorNumber] = sensor.name;
@@ -136,115 +163,58 @@ const VehicleView = () => {
     const lng = lastPos?.lng;
 
     return (
-        <div style={{ padding: 20 }}>
-            <h2>Timeline ของรถ {id}</h2>
-            <p>วันที่: {date}</p>
+        <div className="vehicle-container">
+            <h2 className="vehicle-header">Timeline ของรถ {id}</h2>
+            <p className="vehicle-date">วันที่: {date}</p>
 
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {loading && <p>กำลังโหลดข้อมูล...</p>}
+            {error && <p className="vehicle-error">{error}</p>}
+            {loading && <p className="vehicle-loading">กำลังโหลดข้อมูล...</p>}
 
-            {/* MAP */}
-            {timeline && lat && lng && (
-                <MapContainer center={[lat, lng]} zoom={14} style={{ height: '60vh', width: '100%', marginBottom: 20 }}>
-                    <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution="&copy; OpenStreetMap contributors"
-                    />
-
-                    <Marker position={[lat, lng]}>
-                        <Popup>
-                            <div>
-                                <strong>ตำแหน่งล่าสุด</strong><br />
-                                {lastPos.position_description?.principal?.description || '-'}
-                            </div>
-                        </Popup>
-                    </Marker>
-
-                    {timeline.timeline?.slice(-20).map((trip: any, index: number) => {
-                        const startLat = parseFloat(trip.trip_start_valid_latitude);
-                        const startLng = parseFloat(trip.trip_start_valid_longitude);
-                        const endLat = parseFloat(trip.trip_end_valid_latitude);
-                        const endLng = parseFloat(trip.trip_end_valid_longitude);
-
-                        if (
-                            isNaN(startLat) ||
-                            isNaN(startLng) ||
-                            isNaN(endLat) ||
-                            isNaN(endLng)
-                        ) {
-                            return null;
-                        }
-
-                        return (
-                            <Polyline
-                                key={index}
-                                positions={[
-                                    [startLat, startLng],
-                                    [endLat, endLng],
-                                ]}
-                                color="blue"
-                            />
-                        );
-                    })}
-                </MapContainer>
+            {isLoaded && timeline && lat && lng && (
+                <GoogleMap
+                    center={{ lat, lng }}
+                    zoom={14}
+                    mapContainerClassName="vehicle-map"
+                >
+                    <Marker position={{ lat, lng }} />
+                    {directionsResponse && (
+                        <DirectionsRenderer directions={directionsResponse} />
+                    )}
+                </GoogleMap>
             )}
 
-            {/* EVENTS */}
             {timeline?.events && timeline.events.length > 0 && (
-                <div style={{ marginTop: 30 }}>
+                <div className="event-list">
                     <h3>Events (แสดงล่าสุด {Math.min(10, timeline.events.length)} เหตุการณ์)</h3>
                     <ul>
-                        {timeline.events
-                            .slice(-10)
-                            .map((event: any, idx: number) => (
-                                <li key={idx} style={{ marginBottom: 10 }}>
-                                    <div><strong>เวลา:</strong> {formatDate(event.date)}</div>
-                                    <div>
-                                        <strong>ตำแหน่ง:</strong>{' '}
-                                        {eventAddresses[idx] === undefined
-                                            ? 'กำลังโหลดที่อยู่...'
-                                            : eventAddresses[idx] || (
-                                                event.coords
-                                                    ? `Lat: ${event.coords.lat}, Lng: ${event.coords.lng}`
-                                                    : '-'
-                                            )}
-                                    </div>
-
-                                    <div><strong>Odometer:</strong> {event.odometer ?? '-'}</div>
-                                    <div><strong>Status:</strong> {event.vehicleStatus}</div>
-                                    <div><strong>Sensors:</strong>{' '}
-                                        {event.sensors && Object.keys(event.sensors).length > 0 ? (
-                                            Object.entries(event.sensors)
-                                                .map(([sensorNumber, value]) => {
-                                                    if (sensorMap[sensorNumber] === 'FUEL CAPACITY') {
-                                                        const liters = convertFuelRawToLiters(Number(value));
-                                                        return `${sensorMap[sensorNumber]}: ${liters.toFixed(2)} L`;
-                                                    }
-                                                    return `${sensorMap[sensorNumber] || sensorNumber}: ${value}`;
-                                                })
-                                                .join(', ')
-                                        ) : (
-                                            '-'
-                                        )}
-                                    </div>
+                        {timeline.events.slice(-10).map((event: any, idx: number) => (
+                            <li key={idx} className="event-item">
+                                <div><strong>เวลา:</strong> {formatDate(event.date)}</div>
+                                <div><strong>ตำแหน่ง:</strong> {eventAddresses[idx] ?? '-'}</div>
+                                <div><strong>Odometer:</strong> {event.odometer ?? '-'}</div>
+                                <div><strong>Status:</strong> {event.vehicleStatus}</div>
+                                <div><strong>Sensors:</strong>{' '}
+                                    {event.sensors && Object.keys(event.sensors).length > 0 ? (
+                                        Object.entries(event.sensors)
+                                            .map(([sensorNumber, value]) => {
+                                                if (sensorMap[sensorNumber] === 'FUEL CAPACITY') {
+                                                    const liters = convertFuelRawToLiters(Number(value));
+                                                    return `${sensorMap[sensorNumber]}: ${liters.toFixed(2)} L`;
+                                                }
+                                                return `${sensorMap[sensorNumber] || sensorNumber}: ${value}`;
+                                            })
+                                            .join(', ')
+                                    ) : (
+                                        '-'
+                                    )}
+                                </div>                            
                                 </li>
-                            ))}
+                        ))}
                     </ul>
                 </div>
             )}
-
-            {/* TOTALS */}
-            {timeline?.totals && (
-                <div style={{ marginTop: 30 }}>
-                    <h3>สรุปประจำวัน</h3>
-                    <p>ระยะทางรวม: {timeline.totals.totalDistance} km</p>
-                    <p>เวลาขับ: {timeline.totals.drivingTime}</p>
-                    <p>เวลาจอด: {timeline.totals.stopTime}</p>
-                    <p>การใช้น้ำมัน: {timeline.totals.totalFuelUsed} L</p>
-                    <p>อัตราสิ้นเปลือง: {timeline.totals.totalFuelEconomy} km/L</p>
-                </div>
-            )}
         </div>
+
     );
 };
 

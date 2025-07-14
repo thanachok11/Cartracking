@@ -70,8 +70,6 @@ const GoogleMapView = () => {
         return vehicle.driver_name?.name || null;
     };
 
-    const hoveredVehicle = vehicles.find(v => v.vehicle_id === hoveredVehicleId) || null;
-
     if (!isLoaded) return <div>Loading Map...</div>;
 
     return (
@@ -89,9 +87,7 @@ const GoogleMapView = () => {
                             setHoveredVehicleId(vehicle.vehicle_id);
                         }}
                         onMouseLeave={() => {
-                            setPopupVehicle(null);
-                            setPopupPosition(null);
-                            setHoveredVehicleId(null);
+                           
                         }}
                         onClick={() => handleClick(vehicle.vehicle_id)}
                     >
@@ -106,12 +102,31 @@ const GoogleMapView = () => {
                     style={{
                         top: popupPosition.top,
                         left: popupPosition.left,
-                        position: 'fixed',
                     }}
                 >
+                    <div><strong>Status:</strong> DRIVING</div>
+                    <div><strong>Time:</strong> 21:49 - 14/07/2025</div>
+                    <div><strong>Location:</strong> ถนนสุขุมวิท, เขาวัว, ท่าใหม่, 22120, จันทบุรี</div>
+
+                    <hr />
+
+                    <div><strong>Speed:</strong> 27 KM/H</div>
+                    <div><strong>Road Speed:</strong> 120 KM/H</div>
+                    <div><strong>Odometer:</strong> 546,272 km</div>
+
+                    <hr />
+
+                    <div><strong>Fuel:</strong> 91.53% (338.6 l / 370 l)</div>
+                    <div><strong>Battery:</strong> 100%</div>
+
+                    <hr />
+
+                    <div><strong>Geofence:</strong> <em>ไม่อยู่ในพื้นที่กำหนด</em></div>
+                    <div><strong>TCU Battery:</strong> 100%</div>
+
+                    <hr />
+
                     <div><strong>ทะเบียน:</strong> {popupVehicle.registration}</div>
-                    <div><strong>Speed:</strong> {popupVehicle.speed} km/h</div>
-                    <div><strong>Status:</strong> {popupVehicle.event_description}</div>
                     <div><strong>Ignition:</strong> {popupVehicle.ignition === '1' ? 'ON' : 'OFF'}</div>
                     <div><strong>Running:</strong> {popupVehicle.running_status}</div>
                     <div>
@@ -150,10 +165,11 @@ const GoogleMapView = () => {
                             }}
                             onCloseClick={() => setSelectedVehicle(null)}
                         >
-                            <div style={{ minWidth: 200 }}>
-                                <strong>{selectedVehicle.registration}</strong><br />
+                            <div style={{ minWidth: 200 , padding: '10px'}}>
+                                <strong>Car registration:
+                                    {selectedVehicle.registration}</strong><br />
                                 Speed: {selectedVehicle.speed} km/h<br />
-                                Status: {selectedVehicle.event_description}<br />
+                                Status: {selectedVehicle.statusClassName}<br />
                                 Ignition: {selectedVehicle.ignition === '1' ? 'ON' : 'OFF'}<br />
                                 Running: {selectedVehicle.running_status}<br />
                                 Driver: {getDriverName(selectedVehicle) || <em>ไม่พบข้อมูลคนขับ</em>}

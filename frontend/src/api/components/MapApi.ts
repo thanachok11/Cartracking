@@ -7,7 +7,7 @@ export interface VehiclePosition {
     registration: string;
     speed: number;
     ignition: string;
-    event_description: string;
+    statusClassName: string;
     running_status: string;
 
     driver_name?: {

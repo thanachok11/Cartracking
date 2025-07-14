@@ -34,6 +34,17 @@
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
+.app-container.sidebar-open .vehicle-container{
+  margin-left: 250px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
+.app-container.sidebar-closed .vehicle-container{
+  margin-left: 70px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
 .main-content {
   flex: 1;
   overflow: auto;
