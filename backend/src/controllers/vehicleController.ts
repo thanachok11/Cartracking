@@ -179,3 +179,86 @@ export const reverseGeocode = async (req: Request, res: Response): Promise<void>
         res.status(500).json({ error: 'ไม่สามารถแปลงตำแหน่งเป็นที่อยู่ได้' });
     }
 };
+
+export const getGeofences = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // ✅ Step 1: Login เพื่อเอา session cookie
+        const sessionCookie = await ctLogin();
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': sessionCookie
+        };
+
+        // ✅ Step 2: Call API ct_fleet_get_geofence_v2
+        const geofenceResponse = await axios.post(
+            'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
+            {
+                version: '2.0',
+                method: 'ct_fleet_get_geofence_v2',
+                id: 10,
+                params: {}
+            },
+            { headers }
+        );
+
+        if (!geofenceResponse.data || geofenceResponse.data.error) {
+            res.status(500).json({ error: 'ไม่สามารถดึงข้อมูล Geofence ได้' });
+            return;
+        }
+
+        const geofences = geofenceResponse.data.result?.ct_fleet_get_geofence_v2;
+
+        if (!geofences) {
+            res.status(404).json({ error: 'ไม่พบข้อมูล Geofence' });
+            return;
+        }
+
+        res.json(geofences);
+    } catch (error: any) {
+        console.error('เกิดข้อผิดพลาด:', error.message || error);
+        res.status(500).json({ error: 'ไม่สามารถดึงข้อมูล Geofence ได้' });
+    }
+};
+
+export const getDrivers = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // ✅ Step 1: Login เพื่อเอา session cookie
+        const sessionCookie = await ctLogin();
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': sessionCookie
+        };
+
+        // ✅ Step 2: Call API เพื่อดึง driver list
+        const driversResponse = await axios.post(
+            'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
+            {
+                version: '2.0',
+                method: 'ct_fleet_get_drivers_v2',
+                id: 10,
+                params: {}
+            },
+            { headers }
+        );
+
+        if (!driversResponse.data || driversResponse.data.error) {
+            res.status(500).json({ error: 'ไม่สามารถดึงข้อมูลคนขับได้' });
+            return;
+        }
+
+        // ผลลัพธ์อยู่ใน driversResponse.data.result.ct_fleet_get_drivers_v2
+        const drivers = driversResponse.data.result?.ct_fleet_get_drivers_v2;
+
+        if (!drivers) {
+            res.status(404).json({ error: 'ไม่พบข้อมูลคนขับ' });
+            return;
+        }
+
+        res.json(drivers);
+    } catch (error: any) {
+        console.error('เกิดข้อผิดพลาด:', error.message || error);
+        res.status(500).json({ error: 'ไม่สามารถดึงข้อมูลคนขับได้' });
+    }
+};

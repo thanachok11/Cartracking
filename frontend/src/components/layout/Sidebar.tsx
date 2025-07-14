@@ -7,7 +7,6 @@ import {
     faSignOutAlt,
     faCog,
     faCaretDown,
-    faBars,
     faChevronLeft,
     faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
