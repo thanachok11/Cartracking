@@ -249,7 +249,7 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
         }
 
         // ผลลัพธ์อยู่ใน driversResponse.data.result.ct_fleet_get_drivers_v2
-        const drivers = driversResponse.data.result?.ct_fleet_get_drivers_v2;
+        const drivers = driversResponse.data.result?.ct_fleet_get_drivers;
 
         if (!drivers) {
             res.status(404).json({ error: 'ไม่พบข้อมูลคนขับ' });
