@@ -6,32 +6,97 @@
 }
 
 .vehicle-panel {
-    width: 250px;
-    height: 100vh;
-    background-color: #ffffff;
+    width: 280px;
+    background-color: #f9f9f9;
     border-right: 1px solid #e0e0e0;
+    height: 100vh;
     overflow-y: auto;
-    position: relative;
-    padding: 8px;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
-/* ต้องเปิด overflow เฉพาะ item wrapper เพื่อให้ popup ไม่โดนตัด */
-.vehicle-item-wrapper {
-    position: relative;
-    overflow: visible;
+.vehicle-search {
+    margin-bottom: 12px;
+}
+
+.vehicle-search input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    transition: border 0.2s ease;
+}
+
+.vehicle-search input:focus {
+    border-color: #007bff;
+}
+
+.vehicle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .vehicle-item {
-    position: relative;
-    padding: 12px 16px;
-    margin-bottom: 8px;
     background-color: #fff;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 12px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    font-size: 14px;
+    color: #333;
 }
 
+.vehicle-item:hover {
+    background-color: #f0f8ff;
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.1);
+}
+.status-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 🚦 สีตามสถานะ */
+.status-driving {
+    background-color: #00a326;
+}
+
+.status-idling {
+    background-color: #ffc107;
+}
+
+.status-stationary {
+    background-color: #7dc2ff;
+}
+
+.status-ignition-off {
+    background-color: #6c757d;
+}
+
+.vehicle-details {
+    display: flex;
+    flex-direction: column;
+    margin-top:-20px ;
+}
+
+.registration {
+    font-size: 16px;
+    margin-left: 45px;
+    margin-top: -5px;
+    color: #333;
+}
+
+.stars {
+    font-size: 14px;
+    color: #f4b400;
+}
 .vehicle-popup {
     position: absolute;
     top: 0;
@@ -100,52 +165,168 @@
 
 .vehicle-popup-fixed {
     position: fixed;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    padding: 1.5rem;
-    z-index: 9999;
-    width: 300px;
-    font-family: 'Noto Sans Thai', sans-serif;
+    z-index: 1000;
+    background: #fff;
+    padding: 20px 24px;
+    margin-left: 10px;
+    width: 320px;
+    max-width: 95vw;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    user-select: none;
+    pointer-events: auto;
+    box-sizing: border-box;
+}
+
+.vehicle-popup-fixed .status-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-right: 8px;
+    vertical-align: middle;
+    color: #fff;
+}
+
+/* สถานะ DRIVING */
+.vehicle-popup-fixed .status-driving {
+    background-color: #00a326;
+    /* เขียว */
+}
+
+/* สถานะ IGNITION-OFF */
+.vehicle-popup-fixed .status-ignition-off {
+    background-color: #6c757d;
+}
+.vehicle-popup-fixed .status-stationary {
+    background-color: #7dc2ff;
+}
+/* สถานะ IDLING */
+.vehicle-popup-fixed .status-idling {
+    background-color: #ffc107;
     color: #333;
 }
 
-.vehicle-popup-fixed strong {
-    color: #007bff;
-    font-weight: 600;
-    display: inline-block;
-    width: 120px;
+.vehicle-popup-fixed .timestamp {
+    color: #666;
+    font-size: 13px;
+    vertical-align: middle;
 }
 
-.vehicle-popup-fixed em {
-    color: #999;
+.vehicle-popup-fixed .driver-info {
+    margin: 10px 0 6px 0;
+    color: #888;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.vehicle-status-badge {
-    display: inline-block;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    background-color: #f0f0f0;
+.vehicle-popup-fixed .location-info {
     color: #555;
-    margin-top: 5px;
+    font-size: 14px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.vehicle-popup-fixed hr {
-    margin: 0.75rem 0;
-    border: none;
-    border-top: 1px solid #eee;
+.vehicle-popup-fixed .location-info svg {
+    width: 16px;
+    height: 16px;
+    fill: #888;
 }
-@keyframes slideRight {
-    from {
-        transform: translateX(-10px);
-        opacity: 0;
+
+.stats {
+    background: #f5f5f5;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 14px;
+}
+
+.stats div {
+    text-align: center;
+    flex: 1;
+}
+
+.stats div:first-child {
+    border-right: 1px solid #ddd;
+}
+
+.stats div div:first-child {
+    font-size: 16px;
+    font-weight: bold;
+    color: #5f5f5f;
+}
+
+.stats div div:last-child {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.vehicle-popup-fixed .section-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #222;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+}
+
+.vehicle-popup-fixed .info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #444;
+}
+
+.vehicle-popup-fixed .info-row .label {
+    font-weight: 600;
+    color: #555;
+}
+
+.vehicle-popup-fixed .battery-icon {
+    color: #2c9a2c;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.vehicle-popup-fixed .driver-tag {
+    font-size: 14px;
+    color: #888;
+    padding: 10px 0 0 0;
+    border-top: 1px solid #eee;
+    text-align: center;
+    user-select: none;
+}
+
+@media (max-width: 400px) {
+    .vehicle-popup-fixed {
+        width: 90vw;
+        padding: 16px 20px;
+        font-size: 14px;
     }
 
-    to {
-        transform: translateX(0);
-        opacity: 1;
+    .vehicle-popup-fixed .stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .vehicle-popup-fixed .stats div {
+        border-left: none;
+        text-align: left;
+        padding-left: 0;
     }
 }
 .map-area {

@@ -6,13 +6,46 @@ export interface VehiclePosition {
     longitude: string;
     registration: string;
     speed: number;
+    road_speed:string;
     ignition: string;
     statusClassName: string;
     running_status: string;
-
+    event_ts: string;
     driver_name?: {
         name: string | null;
         client_driver_id: string | null;
+    };
+    position_description?: {
+        principal?: {
+            description?: string;
+        };
+        alternatives?: {
+            description_al?: string;
+        };
+    };
+    alertsActions?: {
+        batteryAlerts?: {
+            powerOFF?: boolean;
+            batteryPercentage?: number;
+        };
+        actionAlerts?: {
+            actions?: any[];
+            actions2?: any[];
+            eventType?: string;
+            eventTypeIcon?: string | null;
+            eventTypeDescription?: string | null;
+        };
+    };
+    batteryAlerts?: {
+        powerOFF?: boolean;
+        batteryPercentage?: number;
+    };
+    actionAlerts?: {
+        actions?: any[];
+        actions2?: any[];
+        eventType?: string;
+        eventTypeIcon?: string | null;
+        eventTypeDescription?: string | null;
     };
 }
 
@@ -29,12 +62,15 @@ export interface Driver {
 export interface Geofence {
     geofence_id: string;
     geofence_name: string;
-    lat: string;
-    lon: string;
-    geosize: string;
-    the_geom: string;
-    // เพิ่ม field ตามจริงที่ backend ส่งมาได้เลย
+    vehicle_ids: string[];
+    position_description?: {
+        principal?: {
+            description?: string;
+        };
+    };
+    // เพิ่ม field อื่น ๆ ตามจริงได้เลยถ้ามี
 }
+
 
 export const fetchVehicle = async (): Promise<VehiclePosition[]> => {
     const response = await axios.get(`${process.env.REACT_APP_API_URL}/car`);

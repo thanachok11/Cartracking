@@ -1,3 +1,4 @@
+// VehicleTimeline.tsx
 import { useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import {
@@ -7,6 +8,8 @@ import {
     useJsApiLoader,
     DirectionsRenderer,
 } from '@react-google-maps/api';
+import { useGoogleMaps } from './GoogleMapsProvider';
+
 import axios from 'axios';
 import '../styles/pages/MapView.css';
 function useQuery() {
@@ -40,10 +43,8 @@ const VehicleView = () => {
     const hasFetchedTimeline = useRef(false);
     const hasFetchedAddresses = useRef(false);
 
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
-        libraries: ['places'],
-    });
+    const { isLoaded } = useGoogleMaps();
+
 
     useEffect(() => {
         if (!id || !date) return;

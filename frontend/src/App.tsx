@@ -6,6 +6,7 @@ import VehicleTimelinePage from "./pages/VehicleTimeline";
 import MapView from "./pages/MapView";
 import HomePage from "./pages/LandingPage";
 import Sidebar from "./components/layout/Sidebar";
+import { GoogleMapsProvider } from './pages/GoogleMapsProvider'; // ✅
 
 import "./App.css";
 
@@ -31,27 +32,29 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div
-        className={`app-container ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}
-      >
-        {/* ✅ แสดง Header เฉพาะเมื่อยังไม่ได้ login */}
-        {!token && (
-          <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-        )}
+      <GoogleMapsProvider> {/* ✅ ครอบ Provider ตรงนี้ */}
+        <div
+          className={`app-container ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}
+        >
+          {/* ✅ แสดง Header เฉพาะเมื่อยังไม่ได้ login */}
+          {!token && (
+            <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+          )}
 
-        {/* ✅ แสดง Sidebar เฉพาะเมื่อ login แล้ว */}
-        {token && (
-          <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        )}
+          {/* ✅ แสดง Sidebar เฉพาะเมื่อ login แล้ว */}
+          {token && (
+            <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+          )}
 
-        <div className="main-content">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/map" element={<MapView />} />
-            <Route path="/vehicle/:id/view" element={<VehicleTimelinePage />} />
-          </Routes>
+          <div className="main-content">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/map" element={<MapView />} />
+              <Route path="/vehicle/:id/view" element={<VehicleTimelinePage />} />
+            </Routes>
+          </div>
         </div>
-      </div>
+      </GoogleMapsProvider>
     </Router>
   );
 };
