@@ -4,9 +4,11 @@ import Header from "./components/layout/Header";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import VehicleTimelinePage from "./pages/VehicleTimeline";
 import MapView from "./pages/MapView";
-import HomePage from "./pages/LandingPage";
+import HomePage from "./components/landingPage/LandingPage";
 import Sidebar from "./components/layout/Sidebar";
-import { GoogleMapsProvider } from './pages/GoogleMapsProvider'; // ✅
+import { GoogleMapsProvider } from './pages/GoogleMapsProvider';
+import Drivers from "./pages/DriverPage";
+import VehiclePage from "./pages/VehiclePage";
 
 import "./App.css";
 
@@ -14,7 +16,7 @@ import "./App.css";
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 403) {
+    if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
       window.location.href = "/";
     }
@@ -50,7 +52,10 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/map" element={<MapView />} />
+              <Route path="/vehicles" element={<VehiclePage />} />
+
               <Route path="/vehicle/:id/view" element={<VehicleTimelinePage />} />
+              <Route path="/Drivers" element={<Drivers />} />
             </Routes>
           </div>
         </div>

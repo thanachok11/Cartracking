@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar }) => {
                 <button onClick={() => navigate("/map")}>
                     <FontAwesomeIcon icon={faMapMarkedAlt} /> {isSidebarOpen && <span>Map</span>}
                 </button>
-                <button onClick={() => navigate("/vehicle/123/view")}>
+                <button onClick={() => navigate("/vehicles")}>
                     <FontAwesomeIcon icon={faCar} /> {isSidebarOpen && <span>Vehicle</span>}
                 </button>
             </nav>

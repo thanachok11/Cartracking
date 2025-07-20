@@ -29,7 +29,7 @@ export const loginUser = async (email: string, password: string) => {
 
         return response.data;  // ส่งข้อมูลที่ได้รับจาก API
     } catch (error: any) {
-        throw new Error(error.response?.data?.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+        throw new Error(error.response?.data?.message || 'User or password is incorrect');
     }
 };
 

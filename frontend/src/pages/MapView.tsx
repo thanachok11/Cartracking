@@ -1,5 +1,7 @@
 // GoogleMapView.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useGoogleMaps } from './GoogleMapsProvider';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import {
     GoogleMap,
     Marker,
@@ -16,11 +18,10 @@ import {
 } from '../api/components/MapApi';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faStreetView, faMapMarkerAlt, faBatteryFull, faTruck,faCar, faUser, faClock, faRoad, faTachometerAlt, faExclamationTriangle
- } from '@fortawesome/free-solid-svg-icons';
+    faStreetView, faMapMarkerAlt, faBatteryFull, faTruck, faCar, faUser, faClock, faRoad, faTachometerAlt, faExclamationTriangle
+} from '@fortawesome/free-solid-svg-icons';
 
 import '../styles/pages/GoogleMapView.css';
-import { useGoogleMaps } from './GoogleMapsProvider';
 
 const containerStyle = {
     width: '100%',
@@ -31,24 +32,28 @@ const defaultCenter = {
     lat: 18.7904,
     lng: 98.9847,
 };
+
 function getVehicleIcon(circleColor: string, imageUrl: string) {
     const svg = `
-      <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="25" cy="25" r="25" fill="${circleColor}" />
-        <image href="${imageUrl}" x="12" y="12" height="26" width="26" />
-      </svg>
-    `;
+    <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="25" cy="25" r="25" fill="${circleColor}" />
+      <image href="${imageUrl}" x="12" y="12" height="26" width="26" />
+    </svg>
+  `;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-
+const statusColorMap: Record<string, string> = {
+    'driving': '#00a326',
+    'idling': '#ffc107',
+    'stationary': '#7dc2ff',
+    'ignition-off': '#6c757d',
+};
 
 const GoogleMapView = () => {
     const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
     const [geofences, setGeofences] = useState<Geofence[]>([]);
     const [hoveredVehicleId, setHoveredVehicleId] = useState<string | null>(null);
-    const [selectedVehicle, setSelectedVehicle] = useState<VehiclePosition | null>(null);
-    const [showStreetView, setShowStreetView] = useState(false);
     const [hoveredVehicle, setHoveredVehicle] = useState<VehiclePosition | null>(null);
 
     const [popupVehicle, setPopupVehicle] = useState<VehiclePosition | null>(null);
@@ -60,20 +65,9 @@ const GoogleMapView = () => {
     const [mapZoom, setMapZoom] = useState(6);
 
     const navigate = useNavigate();
-
     const { isLoaded } = useGoogleMaps();
-
-
-    useEffect(() => {
-        if (popupVehicle) {
-            const lat = parseFloat(popupVehicle.latitude);
-            const lng = parseFloat(popupVehicle.longitude);
-            if (!isNaN(lat) && !isNaN(lng)) {
-                setMapCenter({ lat, lng });
-                setMapZoom(12); // ซูมเข้า
-            }
-        }
-    }, [popupVehicle]);
+    const mapRef = useRef<google.maps.Map | null>(null);
+    const clustererRef = useRef<MarkerClusterer | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -83,24 +77,66 @@ const GoogleMapView = () => {
                     fetchGeofences(),
                 ]);
                 setVehicles(vehicleData);
-                setGeofences(geofenceData); // ✅ แปลงเป็น array
+                setGeofences(geofenceData);
             } catch (error) {
                 console.error('Error loading data:', error);
             }
         };
+
         loadData();
+        const interval = setInterval(loadData, 20000);
+        return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (!mapRef.current || !isLoaded) return;
+
+        // Clear old cluster if exists
+        if (clustererRef.current) {
+            clustererRef.current.clearMarkers();
+        }
+
+        const filtered = vehicles.filter(vehicle =>
+            vehicle.registration.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        const markers = filtered.map(vehicle => {
+            const lat = parseFloat(vehicle.latitude);
+            const lng = parseFloat(vehicle.longitude);
+            if (isNaN(lat) || isNaN(lng)) return null;
+
+            const status = vehicle.statusClassName?.toLowerCase().replace(/\s+/g, '-');
+            const circleColor = statusColorMap[status] || '#999999';
+
+            const marker = new google.maps.Marker({
+                position: { lat, lng },
+                icon: {
+                    url:  "/container.png",
+                    scaledSize: new google.maps.Size(50, 50),
+                    anchor: new google.maps.Point(25, 25),
+                },
+                title: `Vehicle: ${vehicle.registration}`,
+            });
+
+            marker.addListener('click', () => {
+                const today = new Date().toISOString().split('T')[0];
+                navigate(`/vehicle/${vehicle.vehicle_id}/view?date=${today}`);
+            });
+
+            return marker;
+        }).filter(Boolean) as google.maps.Marker[];
+
+        clustererRef.current = new MarkerClusterer({ markers, map: mapRef.current });
+
+    }, [vehicles, searchTerm, isLoaded]);
+    const filteredVehicles = vehicles.filter(vehicle =>
+        vehicle.registration.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const handleClick = (vehicleId: string) => {
         const today = new Date().toISOString().split('T')[0];
         navigate(`/vehicle/${vehicleId}/view?date=${today}`);
     };
-
-    const filteredVehicles = vehicles.filter(vehicle =>
-        vehicle.registration.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-
 
     const getDriverName = (vehicle: VehiclePosition) => {
         return vehicle.driver_name?.name || null;
@@ -108,9 +144,9 @@ const GoogleMapView = () => {
 
     if (!isLoaded) return <div>Loading Map...</div>;
 
-    return (
-        <div className="map-page">
-            {/* Sidebar */}
+return (
+        <div style={{ width: '100%', height: '100vh', display: 'flex' }}>
+            {/* Sidebar Panel */}
             <div className="vehicle-panel">
                 <div className="vehicle-search">
                     <input
@@ -150,10 +186,19 @@ const GoogleMapView = () => {
                         </div>
                     ))}
                 </div>
-
-
             </div>
 
+            {/* Google Map */}
+            <div style={{ flex: 1 }}>
+                <GoogleMap
+                    mapContainerStyle={containerStyle}
+                    center={mapCenter}
+                    zoom={mapZoom}
+                onLoad={(map) => void (mapRef.current = map)}
+                />
+            </div>
+
+            {/* Popup Panel */}
             {popupVehicle && popupPosition && (
                 <div
                     className="vehicle-popup-fixed"
@@ -177,42 +222,34 @@ const GoogleMapView = () => {
                         </span>
                     </div>
 
-                    {popupVehicle?.position_description?.principal?.description ? (
-                        <div className="location-info">
-                            <FontAwesomeIcon icon={faMapMarkerAlt} />
-                            <span>{popupVehicle.position_description.principal.description}</span>
-                        </div>
-                    ) : (
-                        <div className="location-info">
-                            <FontAwesomeIcon icon={faMapMarkerAlt} />
-                            <em>ไม่พบตำแหน่ง</em>
-                        </div>
-                    )}
+                    <div className="location-info">
+                        <FontAwesomeIcon icon={faMapMarkerAlt} />
+                        <span>{popupVehicle.position_description?.principal?.description || <em>ไม่พบตำแหน่ง</em>}</span>
+                    </div>
 
                     <div className="stats">
                         <div>
                             <div>{popupVehicle.speed != null ? `${popupVehicle.speed} KM/H` : '--'}</div>
                             <div>SPEED</div>
                             <FontAwesomeIcon icon={faTachometerAlt} />
-
                         </div>
                         <div>
                             <div>{popupVehicle.road_speed != null ? `${popupVehicle.road_speed} KM/H` : '--'}</div>
                             <div>ROAD SPEED</div>
-                            <FontAwesomeIcon icon={faRoad} /> 
+                            <FontAwesomeIcon icon={faRoad} />
                         </div>
                     </div>
 
-
                     <div className="info-row">
                         <span className="label">TCU Battery:</span>{" "}
-                        {popupVehicle?.alertsActions?.batteryAlerts?.batteryPercentage != null
-                            ? <span>{popupVehicle.alertsActions.batteryAlerts.batteryPercentage}%</span>
-                            : popupVehicle?.batteryAlerts?.batteryPercentage != null
-                                ? <span>{popupVehicle.batteryAlerts.batteryPercentage}%</span>
-                                : <em>ไม่พบข้อมูล</em>}
-                        <FontAwesomeIcon icon={faBatteryFull
-                        } className="battery-icon" />
+                        {
+                            popupVehicle?.alertsActions?.batteryAlerts?.batteryPercentage != null
+                                ? <span>{popupVehicle.alertsActions.batteryAlerts.batteryPercentage}%</span>
+                                : popupVehicle?.batteryAlerts?.batteryPercentage != null
+                                    ? <span>{popupVehicle.batteryAlerts.batteryPercentage}%</span>
+                                    : <em>ไม่พบข้อมูล</em>
+                        }
+                        <FontAwesomeIcon icon={faBatteryFull} className="battery-icon" />
                     </div>
 
                     <hr />
@@ -232,106 +269,9 @@ const GoogleMapView = () => {
                     </div>
                 </div>
             )}
-            <hr />
-
-            {/* Map */}
-            <div className="map-area" style={{ flexGrow: 1, position: 'relative' }}>
-                <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    center={mapCenter}
-                    zoom={mapZoom}
-                    onClick={() => {
-                        setSelectedVehicle(null);
-                        setShowStreetView(false);
-                    }}
-                    onZoomChanged={() => {
-                        // ถ้าใช้ ref map จะดี แต่ขอเว้นไว้
-                    }}
-                >
-                    {vehicles.map(vehicle => {
-                        const lat = parseFloat(vehicle.latitude);
-                        const lng = parseFloat(vehicle.longitude);
-                        if (isNaN(lat) || isNaN(lng)) return null;
-
-                        // กำหนดสีวงกลมตามสถานะ (statusClassName)
-                        const status = vehicle.statusClassName?.toLowerCase().replace(/\s+/g, '-');
-
-                        const statusColorMap: Record<string, string> = {
-                            'driving': '#00a326',
-                            'idling': '#ffc107',
-                            'stationary': '#7dc2ff',
-                            'ignition-off': '#6c757d',
-                        };
-
-                        const circleColor = statusColorMap[status] || '#999999';
-
-                        return (
-                            <Marker
-                                key={vehicle.vehicle_id}
-                                position={{ lat, lng }}
-                                icon={{
-                                    url: getVehicleIcon(circleColor, "/container.png"),
-                                    scaledSize: new window.google.maps.Size(50, 50),
-                                    anchor: new window.google.maps.Point(25, 25),
-                                }}
-
-                                onClick={() => {
-                                    setSelectedVehicle(vehicle);
-                                    setShowStreetView(false);
-                                }}
-                            />
-                        );
-                    })}
-
-
-
-                    {/* แสดง InfoWindow เมื่อมีรถถูกเลือก */}
-                    {selectedVehicle && (
-                        <InfoWindow
-                            position={{
-                                lat: parseFloat(selectedVehicle.latitude),
-                                lng: parseFloat(selectedVehicle.longitude),
-                            }}
-                            onCloseClick={() => setSelectedVehicle(null)}
-                        >
-                            <div style={{ minWidth: 200, padding: '10px' }}>
-                                <strong>Car registration: {selectedVehicle.registration}</strong><br />
-                                Speed: {selectedVehicle.speed} km/h<br />
-                                Status: {selectedVehicle.statusClassName}<br />
-                                Ignition: {selectedVehicle.ignition === '1' ? 'ON' : 'OFF'}<br />
-                                Running: {selectedVehicle.running_status}<br />
-                                Driver: {getDriverName(selectedVehicle) || <em>ไม่พบข้อมูลคนขับ</em>}
-                            </div>
-                        </InfoWindow>
-                    )}
-
-                    {selectedVehicle && showStreetView && (
-                        <StreetViewPanorama
-                            options={{
-                                position: {
-                                    lat: parseFloat(selectedVehicle.latitude),
-                                    lng: parseFloat(selectedVehicle.longitude),
-                                },
-                                pov: { heading: 100, pitch: 0 },
-                                zoom: 1,
-                            }}
-                        />
-                    )}
-                </GoogleMap>
-
-                {/* Street View Button */}
-                {selectedVehicle && (
-                    <button
-                        className="streetview-button"
-                        onClick={() => setShowStreetView(!showStreetView)}
-                        title="Street View"
-                    >
-                        <FontAwesomeIcon icon={faStreetView} size="lg" color="#f57c00" />
-                    </button>
-                )}        
-            </div>
         </div>
     );
+
 };
 
 export default GoogleMapView;

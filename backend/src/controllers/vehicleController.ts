@@ -35,7 +35,7 @@ const ctLogin = async (): Promise<string> => {
 };
 export const getVehicles = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ✅ Step 1: Login แล้วได้ Cookie
+        //  Step 1: Login แล้วได้ Cookie
         const sessionCookie = await ctLogin();
 
         const headers = {
@@ -43,7 +43,7 @@ export const getVehicles = async (req: Request, res: Response): Promise<void> =>
             'Cookie': sessionCookie,
         };
 
-        // ✅ Step 2: ดึงรายชื่อรถ
+        //  Step 2: ดึงรายชื่อรถ
         const fleetResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {
@@ -62,7 +62,7 @@ export const getVehicles = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        // ✅ ส่งเฉพาะข้อมูลรถกลับไป
+        //  ส่งเฉพาะข้อมูลรถกลับไป
         res.json(vehicles);
     } catch (error: any) {
         console.error('เกิดข้อผิดพลาดในการดึงข้อมูลรถ:', error.message || error);
@@ -72,7 +72,7 @@ export const getVehicles = async (req: Request, res: Response): Promise<void> =>
 // 2. ฟังก์ชันหลัก: login → ดึงรถ → ดึงตำแหน่ง
 export const getVehiclesWithPositions = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ✅ Step 1: Login
+        //  Step 1: Login
         const sessionCookie = await ctLogin();
 
         const headers = {
@@ -80,7 +80,7 @@ export const getVehiclesWithPositions = async (req: Request, res: Response): Pro
             'Cookie': sessionCookie
         };
 
-        // ✅ Step 2: ดึงรายชื่อรถ
+        //  Step 2: ดึงรายชื่อรถ
         const fleetResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {
@@ -101,7 +101,7 @@ export const getVehiclesWithPositions = async (req: Request, res: Response): Pro
 
         const vehicleIds: string[] = vehicles.map((v: any) => v.vehicle_id);
 
-        // ✅ Step 3: ดึงตำแหน่งรถ
+        //  Step 3: ดึงตำแหน่งรถ
         const positionsResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {
@@ -132,10 +132,10 @@ export const getVehicleTimelineEvents = async (req: Request, res: Response): Pro
         const vehicle_id = req.params.vehicle_id;    // รับจาก route param
         const date = req.query.date as string;       // รับจาก query param
 
-        console.log('📥 Params & Query:', { vehicle_id, date });
+        console.log('Params & Query:', { vehicle_id, date });
 
         if (!vehicle_id || !date) {
-            console.warn('⚠️ Missing required parameters');
+            console.warn('Missing required parameters');
             res.status(400).json({ error: 'กรุณาระบุ vehicle_id และ date' });
             return;
         }
@@ -145,7 +145,7 @@ export const getVehicleTimelineEvents = async (req: Request, res: Response): Pro
         const end_date = `${date} 23:59:59`;
 
         const sessionCookie = await ctLogin();
-        console.log('🔑 ได้ session cookie:', sessionCookie);
+        console.log('ได้ session cookie:', sessionCookie);
 
         const headers = {
             'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ export const getVehicleTimelineEvents = async (req: Request, res: Response): Pro
             }
         };
 
-        console.log('📤 ส่ง payload:', requestPayload);
+        console.log('ส่ง payload:', requestPayload);
 
         const timelineResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
@@ -171,10 +171,10 @@ export const getVehicleTimelineEvents = async (req: Request, res: Response): Pro
             { headers }
         );
 
-        console.log('📦 Timeline response:', timelineResponse.data);
+        console.log('Timeline response:', timelineResponse.data);
 
         if (!timelineResponse.data || timelineResponse.data.error) {
-            console.error('❌ Timeline API error:', timelineResponse.data?.error);
+            console.error('Timeline API error:', timelineResponse.data?.error);
             res.status(500).json({ error: 'ไม่สามารถดึงข้อมูล timeline ได้' });
             return;
         }
@@ -182,7 +182,7 @@ export const getVehicleTimelineEvents = async (req: Request, res: Response): Pro
         res.json(timelineResponse.data.result);
 
     } catch (error: any) {
-        console.error('🔥 Error in getVehicleTimelineEvents:', error.message || error);
+        console.error('Error in getVehicleTimelineEvents:', error.message || error);
         res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึง timeline' });
     }
 };
@@ -191,7 +191,7 @@ export const reverseGeocode = async (req: Request, res: Response): Promise<void>
         const lat = req.query.lat as string;
         const lon = req.query.lon as string;
 
-        console.log('🔎 reverse geocode request:', { lat, lon });
+        console.log('reverse geocode request:', { lat, lon });
 
         if (!lat || !lon) {
             res.status(400).json({ error: 'กรุณาระบุ lat และ lon' });
@@ -207,17 +207,17 @@ export const reverseGeocode = async (req: Request, res: Response): Promise<void>
             timeout: 15000,
         });
 
-        console.log('✅ reverse geocode response:', response.data);
+        console.log(' reverse geocode response:', response.data);
         res.json(response.data);
     } catch (error: any) {
-        console.error('❌ Error reverse geocode:', error.message || error);
+        console.error('Error reverse geocode:', error.message || error);
         res.status(500).json({ error: 'ไม่สามารถแปลงตำแหน่งเป็นที่อยู่ได้' });
     }
 };
 
 export const getGeofences = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ✅ Step 1: Login เพื่อเอา session cookie
+        //  Step 1: Login เพื่อเอา session cookie
         const sessionCookie = await ctLogin();
 
         const headers = {
@@ -225,7 +225,7 @@ export const getGeofences = async (req: Request, res: Response): Promise<void> =
             'Cookie': sessionCookie
         };
 
-        // ✅ Step 2: Call API ct_fleet_get_geofence_v2
+        //  Step 2: Call API ct_fleet_get_geofence_v2
         const geofenceResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {
@@ -258,7 +258,7 @@ export const getGeofences = async (req: Request, res: Response): Promise<void> =
 
 export const getDrivers = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ✅ Step 1: Login เพื่อเอา session cookie
+        //  Step 1: Login เพื่อเอา session cookie
         const sessionCookie = await ctLogin();
 
         const headers = {
@@ -266,7 +266,7 @@ export const getDrivers = async (req: Request, res: Response): Promise<void> => 
             'Cookie': sessionCookie
         };
 
-        // ✅ Step 2: Call API เพื่อดึง driver list
+        //  Step 2: Call API เพื่อดึง driver list
         const driversResponse = await axios.post(
             'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
             {

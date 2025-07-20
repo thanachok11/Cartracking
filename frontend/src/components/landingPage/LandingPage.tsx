@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { sendContactMessage } from "../api/components/contactApi";
-import PolicyModal from "../components/landingPage/PolicyModal";
+import { sendContactMessage } from "../../api/components/contactApi";
+import PolicyModal from "./PolicyModal";
 
-import "../styles/pages/LandingPage.css";
+import "../../styles/pages/LandingPage.css";
 
 // ✅ Custom Hook ถูกต้องแล้ว
 function useInView(threshold = 0.2) {

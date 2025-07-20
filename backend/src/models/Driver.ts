@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 // กำหนด Interface สำหรับ Driver
 export interface IDriver extends Document {
@@ -7,8 +7,9 @@ export interface IDriver extends Document {
     phoneNumber: string;
     position: string;
     company: string;
-    detail: string;
+    detail?: string;  // เปลี่ยนให้ optional ใน interface ด้วย
     profile_img?: string;
+    createdBy?: Types.ObjectId;
 }
 
 // สร้าง Schema สำหรับ Driver
@@ -36,12 +37,17 @@ const driverSchema = new Schema<IDriver>(
         },
         detail: {
             type: String,
-            required: true,
+            required: false,  // <-- แก้ตรงนี้
         },
         profile_img: {
             type: String,
             default:
                 'https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg',
+        },
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
         },
     },
     {
@@ -49,7 +55,6 @@ const driverSchema = new Schema<IDriver>(
     }
 );
 
-// สร้าง Model
-const Driver = mongoose.model<IDriver>('Driver', driverSchema);
+const Driver = mongoose.model<IDriver>('Drivers', driverSchema);
 
 export default Driver;
