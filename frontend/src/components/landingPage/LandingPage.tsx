@@ -29,10 +29,8 @@ function useInView(threshold = 0.2) {
 // ✅ ภาพต่าง ๆ
 const galleryImages = [
     'https://res.cloudinary.com/dboau6axv/image/upload/v1752055539/IMG_3265_dxyju4.jpg',
-    'https://res.cloudinary.com/dboau6axv/image/upload/v1752055537/IMG_3271_hbpjvf.jpg',
     'https://res.cloudinary.com/dboau6axv/image/upload/v1752055537/IMG_3270_mqeq6s.jpg',
     'https://res.cloudinary.com/dboau6axv/image/upload/v1752055536/IMG_3272_wqaape.jpg',
-    'https://res.cloudinary.com/dboau6axv/image/upload/v1752055536/IMG_3269_xzsyux.jpg',
     'https://res.cloudinary.com/dboau6axv/image/upload/v1752055536/IMG_3274_kzd4lw.jpg',
 ];
 

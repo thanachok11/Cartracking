@@ -6,6 +6,7 @@ import '../styles/pages/VehiclePage.css';
 const VehiclePage: React.FC = () => {
     const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -23,6 +24,11 @@ const VehiclePage: React.FC = () => {
         getVehicles();
     }, []);
 
+    // Filter vehicles based on search term
+    const filteredVehicles = vehicles.filter(vehicle =>
+        vehicle.registration.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     if (loading) return <div className="loading">Loading vehicle data...</div>;
 
     return (
@@ -35,10 +41,31 @@ const VehiclePage: React.FC = () => {
                 Drivers
             </button>
             
+            {/* Search input */}
+            <div className="search-container">
+                <input
+                    type="text"
+                    placeholder="ระบุหมายเลขทะเบียนรถที่ต้องการค้นหา"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                />
+                {searchTerm && (
+                    <p className="search-results">
+                        Found {filteredVehicles.length} vehicle(s) matching "{searchTerm}"
+                    </p>
+                )}
+            </div>
+            
             {/* ตารางข้อมูลรถ */}
             <div className="vehicle-grid">
-                
-                {vehicles.map((vehicle) => (
+                {filteredVehicles.length === 0 && searchTerm ? (
+                    <div className="no-results">
+                        <p>No vehicles found matching "{searchTerm}"</p>
+                        <p>Try adjusting your search term.</p>
+                    </div>
+                ) : (
+                    filteredVehicles.map((vehicle) => (
                     <div key={vehicle.vehicle_id} className="vehicle-card">
                         <h3 className="vehicle-registration">{vehicle.registration}</h3>
                         <p><strong>Driver:</strong> {vehicle.driver_name?.name || 'No Driver Assigned'}</p>
@@ -62,7 +89,8 @@ const VehiclePage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                ))}
+                    ))
+                )}
             </div>
         </div>
     );
