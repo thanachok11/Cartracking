@@ -9,6 +9,8 @@ import {
     faCaretDown,
     faChevronLeft,
     faChevronRight,
+    faUsers,
+    faBox,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
@@ -28,7 +30,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar }) => {
     } | null>(null);
 
     const [userDropdown, setUserDropdown] = useState(false);
+    const [vehicleDropdown, setVehicleDropdown] = useState(false);
     const userRef = useRef<HTMLDivElement>(null);
+    const vehicleRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -66,6 +70,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar }) => {
             if (userRef.current && !userRef.current.contains(target)) {
                 setUserDropdown(false);
             }
+            if (vehicleRef.current && !vehicleRef.current.contains(target)) {
+                setVehicleDropdown(false);
+            }
         };
 
         document.addEventListener("mousedown", handleClickOutside);
@@ -90,9 +97,39 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar }) => {
                 <button onClick={() => navigate("/map")}>
                     <FontAwesomeIcon icon={faMapMarkedAlt} /> {isSidebarOpen && <span>Map</span>}
                 </button>
-                <button onClick={() => navigate("/vehicles")}>
-                    <FontAwesomeIcon icon={faCar} /> {isSidebarOpen && <span>Vehicle</span>}
-                </button>
+                
+                {/* Vehicle dropdown menu */}
+                <div className="vehicle-menu-container" ref={vehicleRef}>
+                    <button 
+                        className="vehicle-menu-button"
+                        onClick={() => setVehicleDropdown(!vehicleDropdown)}
+                    >
+                        <FontAwesomeIcon icon={faCar} /> 
+                        {isSidebarOpen && (
+                            <>
+                                <span>Info</span>
+                                <FontAwesomeIcon 
+                                    icon={faCaretDown} 
+                                    className={`dropdown-arrow ${vehicleDropdown ? 'open' : ''}`}
+                                />
+                            </>
+                        )}
+                    </button>
+                    
+                    {vehicleDropdown && isSidebarOpen && (
+                        <div className="vehicle-dropdown-menu">
+                            <button onClick={() => navigate("/vehicles")}>
+                                <FontAwesomeIcon icon={faCar} /> Vehicles
+                            </button>
+                            <button onClick={() => navigate("/drivers")}>
+                                <FontAwesomeIcon icon={faUsers} /> Drivers
+                            </button>
+                            <button onClick={() => navigate("/containers")}>
+                                <FontAwesomeIcon icon={faBox} /> Container
+                            </button>
+                        </div>
+                    )}
+                </div>
             </nav>
 
             {/* ✅ User Info */}

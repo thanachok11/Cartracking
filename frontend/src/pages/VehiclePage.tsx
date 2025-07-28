@@ -37,9 +37,9 @@ const VehiclePage: React.FC = () => {
             <div className="header-row">
                 <h1 className="page-title">Vehicle Data</h1>
             </div>
-            <button onClick={() => navigate('/drivers')} className="btn-driver-navigate">
+            {/* <button onClick={() => navigate('/drivers')} className="btn-driver-navigate">
                 Drivers
-            </button>
+            </button> */}
             
             {/* Search input */}
             <div className="search-container">
