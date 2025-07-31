@@ -11,10 +11,10 @@ import { verifyToken } from '../Middleware/authMiddleware';
 
 const router = express.Router();
 
-router.post('/drivers', verifyToken, createContainer);
-router.get('/drivers', getAllContainers);
-router.get('/drivers/:id', verifyToken, getContainerById);
-router.patch('/drivers/:id', verifyToken, updateContainer);
-router.delete('/drivers/:id', verifyToken, deleteContainer);
+router.post('/containers', verifyToken, createContainer);
+router.get('/containers', getAllContainers);
+router.get('/containers/:id', verifyToken, getContainerById);
+router.patch('/containers/:id', verifyToken, updateContainer);
+router.delete('/containers/:id', verifyToken, deleteContainer);
 
 export default router;

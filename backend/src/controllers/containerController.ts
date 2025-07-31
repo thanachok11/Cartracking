@@ -40,7 +40,7 @@ export const createContainer = async (req: AuthenticatedRequest, res: Response):
 };
 
 // Get all containers created by this user
-export const getAllContainers = async (res: Response): Promise<void> => {
+export const getAllContainers = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const containers = await Container.find();
         res.status(200).json(containers);
@@ -48,7 +48,9 @@ export const getAllContainers = async (res: Response): Promise<void> => {
         console.error('Error fetching containers:', error);
         res.status(500).json({ message: 'Failed to fetch containers' });
     }
-};
+}
+
+
 
 // Get container by ID
 export const getContainerById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {

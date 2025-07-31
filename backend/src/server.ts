@@ -7,7 +7,7 @@ import connectDB from './utils/database';
 import authRoutes from './routes/authRoutes';
 import vehicleRoutes from './routes/vehicleRoutes';
 import driverRoutes from './routes/driverRoutes';
-
+import containers from './routes/containerRouters';
 const app = express();
 const PORT: number = Number(process.env.PORT) || 5000;
 
@@ -18,11 +18,12 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 app.use(express.json());
 app.use('/api',authRoutes);
 app.use('/api', vehicleRoutes);
 app.use('/api', driverRoutes);
-
+app.use('/api', containers);
 app.get('/', (req, res) => {
     res.send('API is running...');
 });

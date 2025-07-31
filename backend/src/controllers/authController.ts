@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
-import Employee from '../models/Driver';
 
 // ฟังก์ชันสำหรับการดึงข้อมูลผู้ใช้ทั้งหมด
 export const showAllUsers = async (req: Request, res: Response): Promise<void> => {
@@ -51,48 +50,46 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-
 export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
 
     try {
         const user = await User.findOne({ email });
+        console.log('User found:', user);
 
-        // 🧑‍💼 ถ้าเป็นผู้ดูแลระบบ (admin หรือ user)
-        if (user) {
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                res.status(400).json({ message: 'User or password is incorrect' });
-                return;
-            }
-
-            const token = jwt.sign(
-                {
-                    userId: user._id,
-                    email: user.email,
-                    firstname: user.firstName,
-                    lastname: user.lastName,
-                    username: user.username,
-                    role: user.role,
-                    nameStore: user.nameStore,
-                    profile_img: user.profile_img,
-                },
-                process.env.JWT_SECRET as string,
-                { expiresIn: '3h' }
-            );
-
-            res.status(200).json({
-                message: user.role === 'admin' ? 'Login successful as admin' : 'Login successful',
-                token,
-                role: user.role,
-            });
+        if (!user) {
+            res.status(400).json({ message: 'User not found' });
             return;
         }
 
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            res.status(400).json({ message: 'Incorrect password' });
+            return;
+        }
+
+        const token = jwt.sign({
+            userId: user._id,
+            email: user.email,
+            firstname: user.firstName,
+            lastname: user.lastName,
+            username: user.username,
+            role: user.role,
+            profile_img: user.profile_img,
+        }, process.env.JWT_SECRET as string, { expiresIn: '3h' });
+
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            role: user.role,
+        });
+
     } catch (error) {
-        res.status(500).json({ message: 'เข้าสู่ระบบไม่สำเร็จ', error });
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Login failed', error });
     }
 };
+
 
 
 // ฟังก์ชันสำหรับการแก้ไข role ของผู้ใช้

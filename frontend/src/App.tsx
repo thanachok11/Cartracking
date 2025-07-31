@@ -9,7 +9,7 @@ import Sidebar from "./components/layout/Sidebar";
 import { GoogleMapsProvider } from './pages/GoogleMapsProvider';
 import Drivers from "./pages/DriverPage";
 import VehiclePage from "./pages/VehiclePage";
-
+import ContrainerPage from "./pages/ContainerPage";
 import "./App.css";
 
 // ✅ Interceptor: หาก token หมดอายุ ให้ logout และ redirect
@@ -56,6 +56,8 @@ const App: React.FC = () => {
 
               <Route path="/vehicle/:id/view" element={<VehicleTimelinePage />} />
               <Route path="/Drivers" element={<Drivers />} />
+              <Route path="/containers" element={<ContrainerPage />} />
+
             </Routes>
           </div>
         </div>

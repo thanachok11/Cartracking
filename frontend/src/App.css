@@ -3,6 +3,7 @@
   padding: 0;
   box-sizing: border-box;
 }
+
 /* App.css */
 
 .app-container {
@@ -12,7 +13,7 @@
   /* ✅ สำคัญ: ให้ container สูงเต็มจอ */
 }
 
-.app-container.sidebar-open .map-container-wrapper{
+.app-container.sidebar-open .map-container-wrapper {
   margin-left: 250px;
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
@@ -23,6 +24,7 @@
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
+
 .app-container.sidebar-closed .vehicle-page {
   margin-left: 70px;
   margin-top: 10px;
@@ -34,27 +36,55 @@
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
+
 .app-container.sidebar-open .vehicle-panel {
   margin-left: 250px;
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
+
 .app-container.sidebar-closed .vehicle-panel {
   margin-left: 70px;
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
-.app-container.sidebar-open .vehicle-container{
+
+.app-container.sidebar-open .vehicle-container {
   margin-left: 250px;
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
 
-.app-container.sidebar-closed .vehicle-container{
+.app-container.sidebar-closed .vehicle-container {
   margin-left: 70px;
   margin-top: 10px;
   transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
 }
+
+.app-container.sidebar-open .driver-page {
+  margin-left: 250px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
+.app-container.sidebar-closed .driver-page {
+  margin-left: 70px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
+.app-container.sidebar-open .Containers-page {
+  margin-left: 250px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
+.app-container.sidebar-closed .Containers-page {
+  margin-left: 70px;
+  margin-top: 10px;
+  transition: width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+}
+
 .main-content {
   flex: 1;
   overflow: auto;

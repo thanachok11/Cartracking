@@ -4,9 +4,7 @@ import { useGoogleMaps } from './GoogleMapsProvider';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import {
     GoogleMap,
-    Marker,
-    StreetViewPanorama,
-    InfoWindow,
+
 } from '@react-google-maps/api';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,7 +16,7 @@ import {
 } from '../api/components/MapApi';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faStreetView, faMapMarkerAlt, faBatteryFull, faTruck, faCar, faUser, faClock, faRoad, faTachometerAlt, faExclamationTriangle
+     faMapMarkerAlt, faBatteryFull, faTruck, faRoad, faTachometerAlt,
 } from '@fortawesome/free-solid-svg-icons';
 
 import '../styles/pages/GoogleMapView.css';
@@ -33,15 +31,6 @@ const defaultCenter = {
     lng: 98.9847,
 };
 
-function getVehicleIcon(circleColor: string, imageUrl: string) {
-    const svg = `
-    <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="25" cy="25" r="25" fill="${circleColor}" />
-      <image href="${imageUrl}" x="12" y="12" height="26" width="26" />
-    </svg>
-  `;
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
 
 const statusColorMap: Record<string, string> = {
     'driving': '#00a326',
@@ -104,9 +93,6 @@ const GoogleMapView = () => {
             const lat = parseFloat(vehicle.latitude);
             const lng = parseFloat(vehicle.longitude);
             if (isNaN(lat) || isNaN(lng)) return null;
-
-            const status = vehicle.statusClassName?.toLowerCase().replace(/\s+/g, '-');
-            const circleColor = statusColorMap[status] || '#999999';
 
             const marker = new google.maps.Marker({
                 position: { lat, lng },

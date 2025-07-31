@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { fetchVehicle, VehiclePosition } from '../api/components/MapApi';
-import { useNavigate } from 'react-router-dom';
 import '../styles/pages/VehiclePage.css';
 
 const VehiclePage: React.FC = () => {
     const [vehicles, setVehicles] = useState<VehiclePosition[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const navigate = useNavigate();
 
     useEffect(() => {
         const getVehicles = async () => {

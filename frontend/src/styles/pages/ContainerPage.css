@@ -1,6 +1,6 @@
-/* DriverPage.css */
+/* ContainerPage.css */
 
-.driver-page {
+.Containers-page {
     padding: 20px;
     background-color: #f5f7fa;
     min-height: 100vh;
@@ -74,19 +74,19 @@
     color: #374151;
 }
 
-.driver-grid-container {
+.grid-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.25rem;
 }
-.driver-header-row {
+.Container-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.add-driver-button {
+.add-container-button {
     padding: 10px 18px;
     background-color: #2563eb;
     color: white;
@@ -98,44 +98,34 @@
     transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.add-driver-button:hover {
+.add-container-button:hover {
     background-color: #1e40af;
     transform: translateY(-1px);
 }
 
-.add-driver-button:active {
+.add-container-button:active {
     transform: scale(0.98);
 }
-.drivers-card {
+.card {
     background: white;
     padding: 1.25rem;
     border-radius: 10px;
     box-shadow: 0 6px 12px rgb(0 0 0 / 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    text-align: center;
 }
 
-.drivers-card:hover {
+.card:hover {
     transform: translateY(-6px);
     box-shadow: 0 12px 20px rgb(0 0 0 / 0.15);
 }
 
-.drivers-card h3 {
-    margin-top: 0.75rem;
-    margin-bottom: 0.5rem;
-    font-size: 1.25rem;
+.card h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
     color: #1e3a8a;
+    font-size: 1rem;
 }
 
-.drivers-card p {
+.card p {
     margin: 0.25rem 0;
-    font-size: 0.95rem;
-}
-
-.profile-img {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
