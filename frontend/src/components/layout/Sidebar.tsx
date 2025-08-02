@@ -40,6 +40,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar }) => {
         if (token) {
             try {
                 const decoded: any = jwtDecode(token);
+                const currentTime = Date.now() / 1000; // เวลา ณ ตอนนี้ (วินาที)
+                if (decoded.exp < currentTime) {
+                    // ❌ Token หมดอายุ
+                    localStorage.removeItem("token");
+                    setUser(null);
+                    alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+                    window.location.reload();
+                    return;
+                }
+
                 setUser({
                     name: decoded.name,
                     email: decoded.email,

@@ -12,7 +12,7 @@ import { verifyToken } from '../Middleware/authMiddleware';
 const router = express.Router();
 
 router.post('/containers', verifyToken, createContainer);
-router.get('/containers', getAllContainers);
+router.get('/containers', verifyToken, getAllContainers);
 router.get('/containers/:id', verifyToken, getContainerById);
 router.patch('/containers/:id', verifyToken, updateContainer);
 router.delete('/containers/:id', verifyToken, deleteContainer);

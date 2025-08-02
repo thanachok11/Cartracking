@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import TruckHead from '../models/TruckHead';
 import { ITruckHead } from '../models/TruckHead';
+import { AuthenticatedRequest } from '../Middleware/authMiddleware';
 
 // Create a new TruckHead
-export const createTruckHead = async (req: Request, res: Response): Promise<void> => {
+export const createTruckHead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const truckData: Partial<ITruckHead> = req.body;
 
@@ -35,7 +36,7 @@ export const createTruckHead = async (req: Request, res: Response): Promise<void
 };
 
 // Get all TruckHeads
-export const getAllTruckHeads = async (_req: Request, res: Response): Promise<void> => {
+export const getAllTruckHeads = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const trucks = await TruckHead.find();
         res.status(200).json(trucks);
@@ -46,7 +47,7 @@ export const getAllTruckHeads = async (_req: Request, res: Response): Promise<vo
 };
 
 // Get TruckHead by ID
-export const getTruckHeadById = async (req: Request, res: Response): Promise<void> => {
+export const getTruckHeadById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const truck = await TruckHead.findById(id);
@@ -64,7 +65,7 @@ export const getTruckHeadById = async (req: Request, res: Response): Promise<voi
 };
 
 // Update TruckHead
-export const updateTruckHead = async (req: Request, res: Response): Promise<void> => {
+export const updateTruckHead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const updatedTruck = await TruckHead.findByIdAndUpdate(id, req.body, {
@@ -85,7 +86,7 @@ export const updateTruckHead = async (req: Request, res: Response): Promise<void
 };
 
 // Delete TruckHead
-export const deleteTruckHead = async (req: Request, res: Response): Promise<void> => {
+export const deleteTruckHead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const deletedTruck = await TruckHead.findByIdAndDelete(id);
