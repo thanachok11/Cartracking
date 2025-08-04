@@ -14,13 +14,14 @@ const PORT = Number(process.env.PORT) || 5000;
 
 connectDB();
 
+//  CORS middleware
 app.use(cors({
     origin: ['http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
 }));
 
-// ✅ สำคัญ: ต้องใช้ session middleware
+// Session middleware (ไม่มี methods และ allowedHeaders)
 app.use(session({
     name: 'PHPSESSID',
     secret: 'my-secret-key',
@@ -28,25 +29,26 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false, // ถ้าใช้ HTTPS ให้เป็น true
+        secure: false, // ตั้งเป็น true ถ้าใช้ HTTPS
         sameSite: 'lax',
-    },
-    methods: ['GET', 'POST', 'PUT','PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    }
 }));
 
 app.use(express.json());
 
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', vehicleRoutes);
 app.use('/api', driverRoutes);
 app.use('/api', containers);
 app.use('/api', trackcontainers);
 
+// Default route
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
+// Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
