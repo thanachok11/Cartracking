@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import axios from "axios";
 import { CookieJar } from "tough-cookie";
-import { wrapper } from "axios-cookiejar-support";
+
+// import { wrapper } from "axios-cookiejar-support"; // จะ error ใน commonjs
 
 export const trackContainers = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -13,12 +14,14 @@ export const trackContainers = async (req: Request, res: Response): Promise<void
         }
 
         const jar = new CookieJar();
+
+        // ใช้ dynamic import สำหรับ ES Module
+        const { wrapper } = await import("axios-cookiejar-support");
+
         const client = wrapper(axios.create({ jar }));
 
-        // ตั้ง cookie ที่ได้จาก client ลงใน CookieJar
         await jar.setCookie(cookieHeader, "https://ucontainers.com.cn");
 
-        // เรียก API ภายนอกโดยแนบ cookie
         const response = await client.post("https://ucontainers.com.cn/api/track_api.php", {
             token: "af49be057f80c59e5da3f9a8f17c70c6",
             api_name: "get_containers",
