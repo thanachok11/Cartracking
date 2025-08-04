@@ -31,6 +31,8 @@ app.use(session({
         secure: false, // ถ้าใช้ HTTPS ให้เป็น true
         sameSite: 'lax',
     },
+    methods: ['GET', 'POST', 'PUT','PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());
