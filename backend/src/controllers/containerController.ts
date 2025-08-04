@@ -1,8 +1,45 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../Middleware/authMiddleware';
 import Container from '../models/Container';
 import { IContainer } from '../models/Container';
+import axios from 'axios';
+import qs from 'qs';
+interface TokenRequestBody {
+    token: string;
+}
+export const getContainers = async (
+    req: Request<{}, {}, TokenRequestBody>,
+    res: Response
+): Promise<void> => {
+    try {
+        const { token } = req.body;
+        console.log("token",token);
 
+        if (!token) {
+            res.status(400).json({ success: false, message: 'Token is required' });
+            return;
+        }
+
+        const formData = qs.stringify({
+            token: token,
+            api_name: 'get_containers'
+        });
+
+        const response = await axios.post('https://ucontainers.com.cn/api/track_api.php', formData, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        res.status(200).json({
+            success: true,
+            data: response.data
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 // ✅ Create a new container
 export const createContainer = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {

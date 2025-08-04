@@ -69,6 +69,98 @@ export const getVehicles = async (req: Request, res: Response): Promise<void> =>
         res.status(500).json({ error: 'ไม่สามารถดึงข้อมูลรถได้' });
     }
 };
+export const getVehicleDetail = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { vehicleId } = req.params;
+
+        if (!vehicleId) {
+            res.status(400).json({ error: 'กรุณาระบุ vehicle_id' });
+            return;
+        }
+
+        const sessionCookie = await ctLogin();
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': sessionCookie,
+        };
+
+        const detailResponse = await axios.post(
+            'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
+            {
+                jsonrpc: "2.0",
+                method: "ct_fleet_get_vehicle_details",
+                params: {
+                    x: "x",
+                    vehicle_id: vehicleId,
+                },
+                id: 10,
+            },
+            { headers }
+        );
+
+        const detail = detailResponse.data?.result?.ct_fleet_get_vehicle_details;
+
+        if (!detail) {
+            res.status(404).json({ error: 'ไม่พบรายละเอียดของรถ' });
+            return;
+        }
+
+        res.json(detail);
+    } catch (error: any) {
+        console.error('เกิดข้อผิดพลาดในการดึงรายละเอียดรถ:', error.message || error);
+        res.status(500).json({ error: 'ไม่สามารถดึงรายละเอียดรถได้' });
+    }
+};
+export const updateVehicleDetail = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { vehicleId } = req.params;
+        const updateData = req.body;
+
+        if (!vehicleId || !updateData) {
+            res.status(400).json({ error: 'กรุณาระบุ vehicleId และข้อมูลที่จะอัปเดต' });
+            return;
+        }
+
+        const sessionCookie = await ctLogin();
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': sessionCookie,
+        };
+
+        const updatePayload = {
+            jsonrpc: "2.0",
+            method: "ct_fleet_update_vehicle_detail_chunk",
+            id: 10,
+            params: {
+                vehicle_id: vehicleId,
+                data: updateData,
+            },
+        };
+
+        const response = await axios.post(
+            'https://fleetweb-th.cartrack.com/jsonrpc/index.php',
+            updatePayload,
+            { headers }
+        );
+
+        if (response.data?.error) {
+            console.error('อัปเดตล้มเหลว:', response.data.error);
+            res.status(500).json({ error: 'ไม่สามารถอัปเดตรถได้', detail: response.data.error });
+            return;
+        }
+
+        res.json({
+            message: 'อัปเดตรถสำเร็จ',
+            result: response.data?.result,
+        });
+    } catch (error: any) {
+        console.error('เกิดข้อผิดพลาดในการอัปเดตรถ:', error.message || error);
+        res.status(500).json({ error: 'ไม่สามารถอัปเดตรถได้' });
+    }
+};
+
 // 2. ฟังก์ชันหลัก: login → ดึงรถ → ดึงตำแหน่ง
 export const getVehiclesWithPositions = async (req: Request, res: Response): Promise<void> => {
     try {

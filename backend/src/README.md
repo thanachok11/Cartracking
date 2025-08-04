@@ -1,7 +1,9 @@
 # Cartracking
 ```
 npm install -D typescript ts-node nodemon @types/node @types/express @types/bcrypt @types/jsonwebtoken @types/cors
-npm install express dotenv axios mongoose mongodb
+npm install express dotenv axios mongoose mongodb qs 
+tough-cookie axios-cookiejar-support express-session
+npm install --save-dev @types/express-session
 
 start
 npm run dev
