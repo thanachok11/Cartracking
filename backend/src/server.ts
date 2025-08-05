@@ -31,7 +31,7 @@ app.use(session({
     cookie: {
         httpOnly: true,
         secure: true, // ตั้งเป็น true ถ้าใช้ HTTPS
-        sameSite: 'lax',
+        sameSite: 'none',   // ต้องใช้ none เพื่อ cross-origin cookie
     }
 }));
 
