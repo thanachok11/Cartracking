@@ -29,7 +29,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false, // ตั้งเป็น true ถ้าใช้ HTTPS
+        secure: true, // ตั้งเป็น true ถ้าใช้ HTTPS
         sameSite: 'lax',
     }
 }));

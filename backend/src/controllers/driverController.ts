@@ -102,8 +102,6 @@ export const updateDriver = async (req: AuthenticatedRequest, res: Response): Pr
 // ✅ Delete driver
 export const deleteDriver = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-
-
         const { id } = req.params;
         const existingDriver = await Driver.findById(id);
 
@@ -112,9 +110,13 @@ export const deleteDriver = async (req: AuthenticatedRequest, res: Response): Pr
             return;
         }
 
+        // ✅ คำสั่งลบจริง
+        await Driver.findByIdAndDelete(id);
+
         res.status(200).json({ message: 'Driver deleted successfully' });
     } catch (error) {
         console.error('Error deleting driver:', error);
         res.status(500).json({ message: 'Failed to delete driver' });
     }
 };
+

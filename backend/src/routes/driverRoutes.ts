@@ -11,10 +11,10 @@ import { verifyToken } from '../Middleware/authMiddleware';
 
 const router = express.Router();
 
-router.post('/drivers', verifyToken, createDriver);
-router.get('/vehicles/drivers', verifyToken,getAllDrivers);
-router.get('/vehicles/drivers/:id', verifyToken, getDriverById);
-router.patch('/vehicles/drivers/:id', verifyToken, updateDriver);
-router.delete('/vehicles/drivers/:id', verifyToken, deleteDriver);
+router.post('/driver/create', verifyToken, createDriver);
+router.get('/driver', verifyToken,getAllDrivers);
+router.get('/driver/:id', verifyToken, getDriverById);
+router.patch('/driver/:id', verifyToken, updateDriver);
+router.delete('/driver/:id', verifyToken, deleteDriver);
 
 export default router;
