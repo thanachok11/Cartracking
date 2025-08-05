@@ -14,14 +14,15 @@ const PORT = Number(process.env.PORT) || 5000;
 
 connectDB();
 
-//  CORS middleware
-app.use(cors({
+const corsOptions = {
     origin: ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
-}));
+};
 
-// Session middleware (ไม่มี methods และ allowedHeaders)
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // ให้ตอบ preflight ทุก route
+
 app.use(session({
     name: 'PHPSESSID',
     secret: 'my-secret-key',
@@ -36,19 +37,17 @@ app.use(session({
 
 app.use(express.json());
 
-// API Routes
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api', vehicleRoutes);
 app.use('/api', driverRoutes);
 app.use('/api', containers);
 app.use('/api', trackcontainers);
 
-// Default route
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
-// Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
