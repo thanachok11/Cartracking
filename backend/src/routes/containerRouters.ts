@@ -10,7 +10,6 @@ import {
 import { verifyToken } from '../Middleware/authMiddleware';
 
 const router = express.Router();
-
 router.post('/containers', verifyToken, createContainer);
 router.get('/containers', verifyToken, getAllContainers);
 router.get('/containers/:id', verifyToken, getContainerById);

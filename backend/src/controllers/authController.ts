@@ -141,14 +141,12 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
             res.status(401).json({ message: "Invalid token" });
             return;
         }
-
         // หา user จาก decoded token
         const user = await User.findById(decoded.userId);
         if (!user) {
             res.status(404).json({ message: "User not found" });
             return;
         }
-
         // สร้าง token ใหม่ (renew)
         const newToken = jwt.sign({
             userId: user._id,
