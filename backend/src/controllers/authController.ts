@@ -38,7 +38,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             password: hashedPassword,
             firstName,
             lastName,
-            role: 'admin',
+            role: 'user',
             profile_img: 'https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg', // กำหนด profile_img
         });
 
