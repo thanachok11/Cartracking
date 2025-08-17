@@ -6,10 +6,12 @@ export interface IUser extends Document {
     password: string;
     firstName: string;
     lastName: string;
-    role: string; // เพิ่มฟิลด์ role
-    profile_img: string; // เพิ่มฟิลด์ profile_img
+    role: string;
+    profile_img: string;
     createdAt: Date;
     updatedAt: Date;
+    resetPasswordToken?: string;   // ใส่เป็น optional ก็ได้
+    resetPasswordExpires?: Date;   // ใส่เป็น optional
 }
 
 // Define the schema for the User model
@@ -38,12 +40,20 @@ const UserSchema = new Schema<IUser>(
         },
         role: {
             type: String,
-            enum: ['user', 'admin'], // กำหนดค่าให้เลือกได้ระหว่าง 'user' และ 'admin'
-            default: 'admin', // กำหนดค่าเริ่มต้นเป็น 'user'
+            enum: ['admin', 'manager', 'viewer', 'user'],
+            default: 'user',
         },
         profile_img: {
             type: String,
-            default: 'https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg', // กำหนดค่าเริ่มต้นของ profile_img
+            default: 'https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg',
+        },
+        resetPasswordToken: {
+            type: String,
+            default: null,
+        },
+        resetPasswordExpires: {
+            type: Date,
+            default: null,
         },
     },
     {

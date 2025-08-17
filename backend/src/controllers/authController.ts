@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 // ฟังก์ชันสำหรับการดึงข้อมูลผู้ใช้ทั้งหมด
 export const showAllUsers = async (req: Request, res: Response): Promise<void> => {
@@ -195,8 +197,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 };
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
-    const { userId } = req.params;
-    const { firstName, lastName, email, newRole, role: currentUserRole } = req.body;
+    const { userId, firstName, lastName, email, newRole, role: currentUserRole } = req.body;
 
     try {
         // ตรวจสอบสิทธิ์การแก้ไขผู้ใช้
@@ -268,8 +269,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
 // ฟังก์ชันสำหรับการลบผู้ใช้
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
-    const { userId } = req.params;
-    const { role: currentUserRole } = req.body; // role ของผู้ใช้ที่เข้าสู่ระบบ
+    const { userId, role: currentUserRole, currentUserId } = req.body; // อ่านจาก body แทน params
 
     try {
         // ตรวจสอบสิทธิ์การลบผู้ใช้
@@ -292,7 +292,6 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
         }
 
         // ป้องกันการลบตัวเอง
-        const currentUserId = req.body.currentUserId; // ต้องส่ง currentUserId มาด้วย
         if (userId === currentUserId) {
             res.status(400).json({ message: 'Cannot delete your own account' });
             return;
@@ -303,5 +302,82 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
         res.status(200).json({ message: 'User deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete user', error });
+    }
+};
+
+
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            res.status(400).json({ message: "User not found" });
+            return;
+        }
+
+        // สร้าง token สำหรับ reset password
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const resetTokenExpire = Date.now() + 15 * 60 * 1000; // หมดอายุใน 15 นาที
+
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = resetTokenExpire;
+        await user.save();
+
+        // ลิงก์สำหรับ reset
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+        // ส่งอีเมล (ใช้ nodemailer)
+        const transporter = nodemailer.createTransport({
+            service: "Gmail",
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        await transporter.sendMail({
+            from: `"Support" <${process.env.EMAIL_USER}>`,
+            to: user.email,
+            subject: "Password Reset",
+            html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
+        });
+
+        res.status(200).json({ message: "Password reset link sent to email" });
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.status(500).json({ message: "Error sending reset email", error });
+    }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+    const { token, newPassword } = req.body;
+
+    try {
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }, // ตรวจสอบว่ายังไม่หมดอายุ
+        });
+
+        if (!user) {
+            res.status(400).json({ message: "Invalid or expired token" });
+            return;
+        }
+
+        // hash รหัสผ่านใหม่
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        // ล้าง token
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        await user.save();
+
+        res.status(200).json({ message: "Password has been reset successfully" });
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({ message: "Error resetting password", error });
     }
 };
