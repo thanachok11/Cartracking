@@ -40,7 +40,7 @@ const UserSchema = new Schema<IUser>(
         },
         role: {
             type: String,
-            enum: ['admin', 'manager', 'viewer', 'user'],
+            enum: ['super admin','admin', 'manager', 'viewer', 'user'],
             default: 'user',
         },
         profile_img: {
