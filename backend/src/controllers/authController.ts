@@ -135,29 +135,32 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
         res.status(500).json({ message: "Failed to renew token", error });
     }
 };
-
-// ฟังก์ชันสำหรับการสร้างผู้ใช้ใหม่ (โดย admin หรือ manager)
 export const createUser = async (req: Request, res: Response): Promise<void> => {
     const { email, password, firstName, lastName, role: newUserRole } = req.body;
-    const { role: currentUserRole } = req.body; // role ของผู้ใช้ที่เข้าสู่ระบบ
+    const { role: currentUserRole } = req.body; // role ของผู้ที่กำลังสร้าง user
 
     try {
-        // ตรวจสอบสิทธิ์การสร้างผู้ใช้
-        if (currentUserRole !== 'admin' && currentUserRole !== 'manager') {
-            res.status(403).json({ message: 'Permission denied. Only admin or manager can create users.' });
+        // super_admin, admin, manager เท่านั้นที่สร้าง user ได้
+        if (!['super_admin', 'admin', 'manager'].includes(currentUserRole)) {
+            res.status(403).json({ message: 'Permission denied. Only super_admin, admin, or manager can create users.' });
             return;
         }
 
-        // manager สามารถสร้างผู้ใช้ได้เฉพาะ user และ viewer เท่านั้น
-        if (currentUserRole === 'manager' && (newUserRole === 'admin' || newUserRole === 'manager')) {
-            res.status(403).json({ message: 'Permission denied. Manager cannot create admin or manager accounts.' });
+        // manager → สร้างได้แค่ user, viewer
+        if (currentUserRole === 'manager' && !['user', 'viewer'].includes(newUserRole)) {
+            res.status(403).json({ message: 'Permission denied. Manager can only create user or viewer accounts.' });
             return;
         }
 
-        // ตรวจสอบว่า role ใหม่เป็นค่าที่ถูกต้องหรือไม่
-        const validRoles = ['user', 'viewer', 'manager', 'admin'];
+        // admin → สร้างได้แค่ user, viewer, manager
+        if (currentUserRole === 'admin' && !['user', 'viewer', 'manager'].includes(newUserRole)) {
+            res.status(403).json({ message: 'Permission denied. Admin cannot create admin or super_admin accounts.' });
+            return;
+        }
+
+        const validRoles = ['user', 'viewer', 'manager', 'admin', 'super_admin'];
         if (!validRoles.includes(newUserRole)) {
-            res.status(400).json({ message: 'Invalid role. Must be one of: user, viewer, manager, admin' });
+            res.status(400).json({ message: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
             return;
         }
 
@@ -182,7 +185,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         await newUser.save();
 
         res.status(201).json({
-            message: 'User created successfully', user: {
+            message: 'User created successfully', 
+            user: {
                 id: newUser._id,
                 email: newUser.email,
                 firstName: newUser.firstName,
@@ -196,30 +200,35 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
+
+// อัปเดต user
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
     const { userId, firstName, lastName, email, newRole, role: currentUserRole } = req.body;
 
     try {
-        // ตรวจสอบสิทธิ์การแก้ไขผู้ใช้
-        if (currentUserRole !== 'admin' && currentUserRole !== 'manager') {
-            res.status(403).json({ message: 'Permission denied. Only admin or manager can update users.' });
+        if (!['super_admin', 'admin', 'manager'].includes(currentUserRole)) {
+            res.status(403).json({ message: 'Permission denied. Only super_admin, admin, or manager can update users.' });
             return;
         }
 
-        // ค้นหาผู้ใช้ที่ต้องการแก้ไข
         const user = await User.findById(userId);
         if (!user) {
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
-        // manager ไม่สามารถแก้ไข admin หรือ manager ได้
-        if (currentUserRole === 'manager' && (user.role === 'admin' || user.role === 'manager')) {
-            res.status(403).json({ message: 'Permission denied. Manager cannot update admin or manager accounts.' });
+        // manager ห้ามแก้ไข admin, manager, super_admin
+        if (currentUserRole === 'manager' && ['admin', 'manager', 'super_admin'].includes(user.role)) {
+            res.status(403).json({ message: 'Permission denied. Manager cannot update admin, manager, or super_admin accounts.' });
             return;
         }
 
-        // ตรวจสอบอีเมลซ้ำ
+        // admin ห้ามแก้ไข admin, super_admin
+        if (currentUserRole === 'admin' && ['admin', 'super_admin'].includes(user.role)) {
+            res.status(403).json({ message: 'Permission denied. Admin cannot update other admin or super_admin accounts.' });
+            return;
+        }
+
         if (email && email !== user.email) {
             const existingUser = await User.findOne({ email });
             if (existingUser) {
@@ -228,22 +237,26 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
             }
         }
 
-        // อัปเดต role ถ้ามี
         if (newRole) {
-            const validRoles = ['user', 'viewer', 'manager', 'admin'];
+            const validRoles = ['user', 'viewer', 'manager', 'admin', 'super_admin'];
             if (!validRoles.includes(newRole)) {
-                res.status(400).json({ message: 'Invalid role. Must be one of: user, viewer, manager, admin' });
+                res.status(400).json({ message: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
                 return;
             }
 
-            // ตรวจสอบสิทธิ์ในการแก้ไข role
-            if (currentUserRole === 'manager' && (newRole === 'admin' || newRole === 'manager')) {
-                res.status(403).json({ message: 'Permission denied. Manager cannot assign admin or manager roles.' });
+            // manager ห้ามอัปเดตเป็น admin, manager, super_admin
+            if (currentUserRole === 'manager' && ['admin', 'manager', 'super_admin'].includes(newRole)) {
+                res.status(403).json({ message: 'Permission denied. Manager cannot assign admin, manager, or super_admin roles.' });
+                return;
+            }
+
+            // admin ห้ามอัปเดตเป็น admin, super_admin
+            if (currentUserRole === 'admin' && ['admin', 'super_admin'].includes(newRole)) {
+                res.status(403).json({ message: 'Permission denied. Admin cannot assign admin or super_admin roles.' });
                 return;
             }
         }
 
-        // อัปเดตข้อมูลผู้ใช้
         user.firstName = firstName || user.firstName;
         user.lastName = lastName || user.lastName;
         user.email = email || user.email;
@@ -267,31 +280,33 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     }
 };
 
-// ฟังก์ชันสำหรับการลบผู้ใช้
+
+// ลบ user
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
-    const { userId, role: currentUserRole, currentUserId } = req.body; // อ่านจาก body แทน params
+    const { userId, role: currentUserRole, currentUserId } = req.body;
 
     try {
-        // ตรวจสอบสิทธิ์การลบผู้ใช้
-        if (currentUserRole !== 'admin' && currentUserRole !== 'manager') {
-            res.status(403).json({ message: 'Permission denied. Only admin or manager can delete users.' });
+        if (!['super_admin', 'admin', 'manager'].includes(currentUserRole)) {
+            res.status(403).json({ message: 'Permission denied. Only super_admin, admin, or manager can delete users.' });
             return;
         }
 
-        // ค้นหาผู้ใช้ที่ต้องการลบ
         const user = await User.findById(userId);
         if (!user) {
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
-        // manager ไม่สามารถลบ admin หรือ manager ได้
-        if (currentUserRole === 'manager' && (user.role === 'admin' || user.role === 'manager')) {
-            res.status(403).json({ message: 'Permission denied. Manager cannot delete admin or manager accounts.' });
+        if (currentUserRole === 'manager' && ['admin', 'manager', 'super_admin'].includes(user.role)) {
+            res.status(403).json({ message: 'Permission denied. Manager cannot delete admin, manager, or super_admin accounts.' });
             return;
         }
 
-        // ป้องกันการลบตัวเอง
+        if (currentUserRole === 'admin' && ['admin', 'super_admin'].includes(user.role)) {
+            res.status(403).json({ message: 'Permission denied. Admin cannot delete other admin or super_admin accounts.' });
+            return;
+        }
+
         if (userId === currentUserId) {
             res.status(400).json({ message: 'Cannot delete your own account' });
             return;
