@@ -108,7 +108,7 @@ export const getContainerById = async (req: AuthenticatedRequest, res: Response)
 export const updateContainer = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
 
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== 'admin' && req.user.role !== 'super admin') {
             res.status(403).json({ message: 'Forbidden: only admin can update containers' });
             return;
         }

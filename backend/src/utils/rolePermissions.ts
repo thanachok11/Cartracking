@@ -2,9 +2,11 @@
 
 // mapping ว่า role ไหน จัดการ role อะไรได้บ้าง
 const rolePermissions: Record<string, string[]> = {
-    super_admin: ["user", "viewer", "manager", "admin", "super_admin"],
-    admin: ["user", "viewer", "manager"],
-    manager: ["user", "viewer"],
+    "super admin": ["user", "viewer", "manager", "admin"],  // แก้ "super_admin" เป็น "super admin"
+    "admin": ["user", "viewer", "manager"],
+    "manager": ["user", "viewer"],
+    "viewer": [],
+    "user": []
 };
 
 export function canManageRole(currentRole: string, targetRole: string): boolean {
