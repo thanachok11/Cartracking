@@ -10,13 +10,25 @@ export function checkPermission(action: "create" | "update" | "delete") {
 
         try {
             if (action === "create") {
-                targetRole = req.body.role; // role ใหม่ที่กำลังจะสร้าง
+                // 🎯 role ที่กำลังจะสร้าง (เช่น admin จะสร้าง manager)
+                targetRole = req.body.role;
             } else if (action === "update") {
-                targetRole = req.body.newRole || req.body.currentRole;
-            } else if (action === "delete") {
-                const { userId } = req.body; // user ที่จะถูกลบ
+                const { userId, newRole } = req.body;
                 if (!userId) {
-                    return res.status(400).json({ message: "User ID is required." });
+                    return res.status(400).json({ message: "User ID is required for update." });
+                }
+
+                const targetUser = await User.findById(userId);
+                if (!targetUser) {
+                    return res.status(404).json({ message: "Target user not found." });
+                }
+
+                // ถ้ามี newRole = role ที่จะเปลี่ยน, ถ้าไม่มีใช้ role ปัจจุบัน
+                targetRole = newRole || targetUser.role;
+            } else if (action === "delete") {
+                const { userId } = req.body;
+                if (!userId) {
+                    return res.status(400).json({ message: "User ID is required for delete." });
                 }
 
                 const targetUser = await User.findById(userId);
