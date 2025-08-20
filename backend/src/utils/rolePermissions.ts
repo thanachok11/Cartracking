@@ -1,8 +1,5 @@
-// utils/rolePermissions.ts
-
-// mapping ว่า role ไหน จัดการ role อะไรได้บ้าง
 const rolePermissions: Record<string, string[]> = {
-    "super admin": ["user", "viewer", "manager", "admin"],  // แก้ "super_admin" เป็น "super admin"
+    "super admin": ["user", "viewer", "manager", "admin"],
     "admin": ["user", "viewer", "manager"],
     "manager": ["user", "viewer"],
     "viewer": [],
@@ -10,7 +7,12 @@ const rolePermissions: Record<string, string[]> = {
 };
 
 export function canManageRole(currentRole: string, targetRole: string): boolean {
-    // ถ้าไม่มีสิทธิ์ หรือ role ไม่ถูกต้อง → false
-    if (!rolePermissions[currentRole]) return false;
-    return rolePermissions[currentRole].includes(targetRole);
+    if (!currentRole || !targetRole) return false;
+
+    const normalizedCurrent = currentRole.toLowerCase();
+    const normalizedTarget = targetRole.toLowerCase();
+
+    if (!rolePermissions[normalizedCurrent]) return false;
+
+    return rolePermissions[normalizedCurrent].includes(normalizedTarget);
 }
