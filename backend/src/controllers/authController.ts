@@ -156,7 +156,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         await user.save();
 
         // ลิงก์สำหรับ reset
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+        const resetLink = `${process.env.FRONTEND_URL}/?token=${resetToken}`;
 
         // ส่งอีเมล (ใช้ nodemailer)
         const transporter = nodemailer.createTransport({

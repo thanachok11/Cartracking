@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import User from "../models/User";
+import { IUser } from "../models/User";
+import { AuthenticatedRequest } from '../Middleware/authMiddleware';
+import cloudinary from '../config/cloudinary';
+import jwt from "jsonwebtoken";
 
 // CREATE USER
 export const createUser = async (req: Request, res: Response): Promise<void> => {
@@ -45,44 +49,118 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 };
 
 // UPDATE USER
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
-    const { userId, firstName, lastName, email, newRole } = req.body;
-
+export const updateUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
+        const userId = req.user?._id; // ใช้ userId จาก token
+        if (!userId) {
+            res.status(401).json({ message: "Unauthorized: missing user info" })
+            return
+        };
+
+        const { firstName, lastName, email, newRole } = req.body;
+
         const user = await User.findById(userId);
         if (!user) {
-            res.status(404).json({ message: "User not found" });
-            return;
-        }
+            res.status(404).json({ message: "User not found" })
+            return
+        };
 
         // ตรวจสอบอีเมลซ้ำ
         if (email && email !== user.email) {
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                res.status(400).json({ message: "อีเมลนี้ มีผู้ใช้อยู่ในระบบแล้ว" });
-                return;
+                res.status(400).json({ message: "อีเมลนี้ มีผู้ใช้อยู่ในระบบแล้ว" })
             }
+            return
+        };
+
+        // เตรียมข้อมูลอัปเดตแบบ Partial<IUser>
+        const updatedData: Partial<IUser> = {
+            firstName: firstName || user.firstName,
+            lastName: lastName || user.lastName,
+            email: email || user.email,
+            role: newRole || user.role,
+        };
+
+        // ถ้ามีไฟล์รูป → อัปโหลดก่อน update
+        if (req.file) {
+            cloudinary.uploader.upload_stream(
+                { resource_type: "auto" },
+                async (err, result) => {
+                    if (err || !result) {
+                        console.error(err);
+                        res.status(500).json({ message: "Error uploading image" });
+                        return;
+                    }
+
+                    updatedData.profile_img = result.secure_url;
+
+                    // merge ข้อมูลและ save
+                    Object.assign(user, updatedData);
+                    await user.save();
+
+                    // สร้าง token ใหม่
+                    const newToken = jwt.sign(
+                        {
+                            userId: user._id,
+                            email: user.email,
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            role: user.role,
+                            profile_img: user.profile_img,
+                        },
+                        process.env.JWT_SECRET!,
+                        { expiresIn: "30m" }
+                    );
+
+                    res.status(200).json({
+                        message: "User updated successfully",
+                        user: {
+                            id: user._id,
+                            email: user.email,
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            role: user.role,
+                            profile_img: user.profile_img,
+                        },
+                        token: newToken,
+                    });
+                }
+            ).end(req.file.buffer);
+        } else {
+            // ไม่มีไฟล์ → save ธรรมดา
+            Object.assign(user, updatedData);
+            await user.save();
+
+            const newToken = jwt.sign(
+                {
+                    userId: user._id,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    role: user.role,
+                    profile_img: user.profile_img,
+                },
+                process.env.JWT_SECRET!,
+                { expiresIn: "30m" }
+            );
+
+            res.status(200).json({
+                message: "User updated successfully",
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    role: user.role,
+                    profile_img: user.profile_img,
+                },
+                token: newToken,
+            });
         }
 
-        user.firstName = firstName || user.firstName;
-        user.lastName = lastName || user.lastName;
-        user.email = email || user.email;
-        if (newRole) user.role = newRole;
-
-        await user.save();
-
-        res.status(200).json({
-            message: "User updated successfully",
-            user: {
-                id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-                profile_img: user.profile_img,
-            },
-        });
     } catch (error) {
+        console.error("Error updating user:", error);
         res.status(500).json({ message: "Failed to update user", error });
     }
 };

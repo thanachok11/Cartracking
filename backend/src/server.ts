@@ -21,7 +21,9 @@ connectDB();
 const corsOptions = {
     origin: [
         'http://localhost:3000',              // สำหรับ dev
-        'https://cartracking.up.railway.app' // สำหรับ production
+        'https://cartracking.up.railway.app', // สำหรับ production
+        'https://porchoengroup.com',
+        'https://www.porchoengroup.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,

@@ -14,25 +14,25 @@ export const createDriver = async (req: AuthenticatedRequest, res: Response): Pr
             return;
         }
 
-        const { firstName, lastName, phoneNumber, position, profile_img,company, detail } = req.body;
+        const { firstName, lastName, phoneNumber, position, company, detail } = req.body;
 
         if (!firstName || !lastName || !phoneNumber || !position || !company) {
             res.status(400).json({ message: 'Please provide firstName, lastName, phoneNumber, position and company' });
             return;
         }
-        // เตรียมข้อมูล driver
+
+        // สร้าง driverData เบื้องต้น (profile_img ไม่ต้องส่งมาก็ได้ ใช้ default ของ schema)
         const driverData: Partial<IDriver> = {
             firstName,
             lastName,
             phoneNumber,
             position,
             company,
-            profile_img,
             detail,
             createdBy: userId,
         };
 
-        // ✅ หากมีไฟล์รูปภาพ อัปโหลดไป Cloudinary แล้วเพิ่มลง driverData
+        // ✅ ถ้ามีไฟล์แนบมาด้วย → อัปโหลดไป Cloudinary
         if (req.file) {
             cloudinary.uploader.upload_stream(
                 { resource_type: 'auto' },
@@ -43,7 +43,6 @@ export const createDriver = async (req: AuthenticatedRequest, res: Response): Pr
                         return;
                     }
 
-                    // ✅ อัปเดต URL รูปจริงจาก Cloudinary
                     driverData.profile_img = result.secure_url;
 
                     const newDriver = new Driver(driverData);
@@ -52,7 +51,14 @@ export const createDriver = async (req: AuthenticatedRequest, res: Response): Pr
                     res.status(201).json({ message: 'Driver created successfully', data: newDriver });
                 }
             ).end(req.file.buffer);
+        } else {
+            // ✅ ไม่มีไฟล์ → ใช้ default image ที่กำหนดใน schema
+            const newDriver = new Driver(driverData);
+            await newDriver.save();
+
+            res.status(201).json({ message: 'Driver created successfully', data: newDriver });
         }
+
     } catch (error) {
         console.error('Error creating driver:', error);
         res.status(500).json({ message: 'Failed to create driver' });
