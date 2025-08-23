@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { AuthenticatedRequest } from '../Middleware/authMiddleware';
+
 
 // ฟังก์ชันสำหรับการดึงข้อมูลผู้ใช้ทั้งหมด
 export const showAllUsers = async (req: Request, res: Response): Promise<void> => {
@@ -78,7 +80,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             username: user.username,
             role: user.role,
             profile_img: user.profile_img,
-        }, process.env.JWT_SECRET as string, { expiresIn: '30m' });
+        }, process.env.JWT_SECRET as string, { expiresIn: '20m' });
 
         res.status(200).json({
             message: 'Login successful',
@@ -127,7 +129,7 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
             username: user.username,
             role: user.role,
             profile_img: user.profile_img,
-        }, process.env.JWT_SECRET as string, { expiresIn: "30m" });
+        }, process.env.JWT_SECRET as string, { expiresIn: "20m" });
 
         res.status(200).json({ message: "Token renewed successfully", token: newToken });
     } catch (error) {
@@ -209,5 +211,48 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     } catch (error) {
         console.error("Reset password error:", error);
         res.status(500).json({ message: "Error resetting password", error });
+    }
+};
+export const changePassword = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?._id;
+    const { currentPassword, newPassword } = req.body;
+    try {
+        if (!userId) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({ message: "Current and new password are required" });
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            res.status(400).json({ message: "New password must be different from current password" });
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            res.status(400).json({ message: "Current password is incorrect" });
+            return;
+        }
+
+        // hash รหัสผ่านใหม่
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        await user.save();
+
+        res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+        console.error("Change password error:", error);
+        res.status(500).json({ message: "Error changing password", error });
     }
 };
