@@ -47,34 +47,56 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         res.status(500).json({ message: "Failed to create user", error });
     }
 };
-
 // UPDATE USER
 export const updateUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user?._id; // ใช้ userId จาก token
-        if (!userId) {
+        const currentUserId = req.user?._id; // id ของคนที่ login
+        const currentUserRole = req.user?.role; // role ของคนที่ login
+        if (!currentUserId) {
             res.status(401).json({ message: "Unauthorized: missing user info" })
             return
         };
 
-        const { firstName, lastName, email, newRole } = req.body;
+        const { targetUserId, firstName, lastName, email, newRole } = req.body;
 
-        const user = await User.findById(userId);
+        // ถ้าไม่ส่ง targetUserId มา → แก้ไขตัวเอง
+        const idToUpdate = targetUserId || currentUserId;
+
+        const user = await User.findById(idToUpdate);
         if (!user) {
             res.status(404).json({ message: "User not found" })
             return
         };
 
-        // ตรวจสอบอีเมลซ้ำ
-        if (email && email !== user.email) {
-            const existingUser = await User.findOne({ email });
-            if (existingUser) {
-                res.status(400).json({ message: "อีเมลนี้ มีผู้ใช้อยู่ในระบบแล้ว" })
-            }
-            return
-        };
+        // ✅ ตรวจสอบสิทธิ์การเปลี่ยน role
+        if (newRole) {
+            const roleLower = (currentUserRole || "").toString().toLowerCase();
+            const targetRoleLower = newRole.toString().toLowerCase();
+            const targetUserRoleLower = (user.role || "").toString().toLowerCase();
 
-        // เตรียมข้อมูลอัปเดตแบบ Partial<IUser>
+            // ให้ super admin และ admin แก้ role ได้
+            if (roleLower !== "super admin" && roleLower !== "admin") {
+                 res.status(403).json({ message: "Forbidden: เฉพาะ super admin หรือ admin ที่สามารถเปลี่ยน role ได้" });
+                return ;
+            }
+
+            // กันไม่ให้ลด role ตัวเอง (เฉพาะ admin หรือ super admin)
+            if (String(currentUserId) === String(user._id) && roleLower === "admin" && targetRoleLower !== "admin") {
+                res.status(400).json({ message: "Admin ไม่สามารถลดระดับ role ของตัวเองได้" });
+                return  ;
+            }
+
+            // กัน admin ลด role ของ admin คนอื่น
+            if (roleLower === "admin" && targetUserRoleLower === "admin" && targetRoleLower !== "admin") {
+                 res.status(403).json({ message: "Admin ไม่สามารถลดระดับ role ของ admin คนอื่นได้" });
+                return ;
+            }
+
+            user.role = newRole;
+        }
+
+
+        // เตรียมข้อมูลอัปเดต
         const updatedData: Partial<IUser> = {
             firstName: firstName || user.firstName,
             lastName: lastName || user.lastName,
@@ -82,7 +104,7 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response): Prom
             role: newRole || user.role,
         };
 
-        // ถ้ามีไฟล์รูป → อัปโหลดก่อน update
+        // ⬇️ โค้ดส่วน upload รูป / save / token (เดิม) ไม่แก้
         if (req.file) {
             cloudinary.uploader.upload_stream(
                 { resource_type: "auto" },
@@ -95,11 +117,9 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response): Prom
 
                     updatedData.profile_img = result.secure_url;
 
-                    // merge ข้อมูลและ save
                     Object.assign(user, updatedData);
                     await user.save();
 
-                    // สร้าง token ใหม่
                     const newToken = jwt.sign(
                         {
                             userId: user._id,
@@ -110,7 +130,7 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response): Prom
                             profile_img: user.profile_img,
                         },
                         process.env.JWT_SECRET!,
-                        { expiresIn: "30m" }
+                        { expiresIn: "20m" }
                     );
 
                     res.status(200).json({
@@ -128,7 +148,6 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response): Prom
                 }
             ).end(req.file.buffer);
         } else {
-            // ไม่มีไฟล์ → save ธรรมดา
             Object.assign(user, updatedData);
             await user.save();
 
@@ -142,7 +161,7 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response): Prom
                     profile_img: user.profile_img,
                 },
                 process.env.JWT_SECRET!,
-                { expiresIn: "30m" }
+                { expiresIn: "20m" }
             );
 
             res.status(200).json({

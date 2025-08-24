@@ -17,29 +17,42 @@ export function checkPermission(action: "create" | "update" | "delete") {
             const currentUserId = decoded.userId;
             const currentUserRole = decoded.role.toLowerCase();
 
-            let targetUserRole: string | undefined;
-
             if (action === "create") {
-                targetUserRole = req.body.role?.trim().toLowerCase();
-                if (!targetUserRole) {
+                const targetRole = req.body.role?.trim().toLowerCase();
+                if (!targetRole) {
                     return res.status(400).json({ message: "Target role is required for create" });
                 }
 
-                // ตรวจสอบ permission สำหรับ create
-                if (!canManageRole(currentUserRole, targetUserRole)) {
+                if (!canManageRole(currentUserRole, targetRole)) {
                     return res.status(403).json({
-                        message: `Permission denied. ${currentUserRole} cannot create ${targetUserRole}.`,
+                        message: `Permission denied. ${currentUserRole} cannot create ${targetRole}.`,
                     });
                 }
-
-            } else {
+            } else if (action === "update") {
                 const { userId, newRole } = req.body;
-
                 if (!userId) {
-                    return res.status(400).json({ message: "User ID is required" });
+                    return res.status(400).json({ message: "User ID is required for update" });
                 }
 
-                if (userId === currentUserId && action === "delete") {
+                const targetUser = await User.findById(userId);
+                if (!targetUser) {
+                    return res.status(404).json({ message: "Target user not found" });
+                }
+
+                if (newRole) {
+                    const newRoleLower = newRole.trim().toLowerCase();
+                    if (!canManageRole(currentUserRole, newRoleLower)) {
+                        return res.status(403).json({
+                            message: `Permission denied. ${currentUserRole} cannot update role to ${newRoleLower}.`,
+                        });
+                    }
+                }
+            } else if (action === "delete") {
+                const { userId } = req.body;
+                if (!userId) {
+                    return res.status(400).json({ message: "User ID is required for delete" });
+                }
+                if (userId === currentUserId) {
                     return res.status(400).json({ message: "Cannot delete your own account" });
                 }
 
@@ -48,28 +61,11 @@ export function checkPermission(action: "create" | "update" | "delete") {
                     return res.status(404).json({ message: "Target user not found" });
                 }
 
-                targetUserRole = targetUser.role?.trim().toLowerCase();
-                if (!targetUserRole) {
-                    return res.status(400).json({ message: "Target user role not found" });
-                }
-
-                // ตรวจสอบ permission สำหรับ update
-                if (action === "update") {
-                    // ถ้ามี newRole → ตรวจสอบ permission กับ targetUser ปัจจุบัน
-                    if (newRole && !canManageRole(currentUserRole, targetUserRole)) {
-                        return res.status(403).json({
-                            message: `Permission denied. ${currentUserRole} cannot update ${targetUserRole}.`,
-                        });
-                    }
-                }
-
-                // ตรวจสอบ permission สำหรับ delete
-                if (action === "delete") {
-                    if (!canManageRole(currentUserRole, targetUserRole)) {
-                        return res.status(403).json({
-                            message: `Permission denied. ${currentUserRole} cannot delete ${targetUserRole}.`,
-                        });
-                    }
+                const targetRole = targetUser.role?.trim().toLowerCase();
+                if (!canManageRole(currentUserRole, targetRole)) {
+                    return res.status(403).json({
+                        message: `Permission denied. ${currentUserRole} cannot delete ${targetRole}.`,
+                    });
                 }
             }
 
@@ -79,3 +75,4 @@ export function checkPermission(action: "create" | "update" | "delete") {
         }
     };
 }
+
