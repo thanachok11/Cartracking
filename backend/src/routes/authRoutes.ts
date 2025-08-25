@@ -13,6 +13,6 @@ router.post('/reset-password', resetPassword);
 router.post("/change-password", verifyToken, changePassword);
 
 router.post('/register', register);
-router.get('/users', showAllUsers);
+router.get('/users', verifyToken, showAllUsers);
 
 export default router;
