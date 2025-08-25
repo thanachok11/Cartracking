@@ -26,6 +26,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
             firstName,
             lastName,
             role,
+            isActive: false, // เพิ่มตรงนี้
             profile_img:
                 "https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg",
         });
@@ -39,6 +40,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
                 email: newUser.email,
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
+                isActive: newUser.isActive,
                 role: newUser.role,
                 profile_img: newUser.profile_img,
             },
@@ -183,10 +185,77 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response): Prom
         res.status(500).json({ message: "Failed to update user", error });
     }
 };
+// UPDATE USER STATUS
+export const updateStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const currentUserId = req.user?._id;
+        const currentUserRole = req.user?.role; // ดึง role ของผู้ทำ action
+        if (!currentUserId) {
+            res.status(401).json({ message: "Unauthorized: missing user info" });
+            return;
+        }
 
-// DELETE USER
-export const deleteUser = async (req: Request, res: Response): Promise<void> => {
-    const { userId, currentUserId } = req.body;
+        // เช็คสิทธิ์: เฉพาะ admin และ super admin
+        const allowedRoles = ["admin", "super admin"];
+        if (!currentUserRole || !allowedRoles.includes(currentUserRole.toLowerCase())) {
+            res.status(403).json({ message: "Forbidden: เฉพาะ admin และ super admin เท่านั้นที่สามารถเปลี่ยนสถานะได้" });
+            return;
+        }
+
+        const { targetUserId, isActive } = req.body;
+        if (!targetUserId || typeof isActive !== "boolean") {
+            res.status(400).json({ message: "Missing targetUserId or isActive" });
+            return;
+        }
+
+        const user = await User.findById(targetUserId);
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+
+        // ป้องกันไม่ให้ตัวเองปิดใช้งานตัวเอง
+        if (String(currentUserId) === String(user._id) && !isActive) {
+            res.status(400).json({ message: "คุณไม่สามารถปิดใช้งานบัญชีของตัวเองได้" });
+            return;
+        }
+
+        user.isActive = isActive;
+        await user.save();
+
+        res.status(200).json({
+            message: `User status updated to ${isActive ? "Active" : "Inactive"}`,
+            user: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                isActive: user.isActive,
+                profile_img: user.profile_img,
+            },
+        });
+
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({ message: "Failed to update user status", error });
+    }
+};
+export const deleteUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { userId } = req.body; // <-- เปลี่ยนจาก targetUserId
+    const currentUserId = req.user?._id;
+    const currentUserRole = req.user?.role;
+
+    if (!currentUserId) {
+        res.status(401).json({ message: "Unauthorized: missing user info" });
+        return;
+    }
+
+    const allowedRoles = ["admin", "super admin"];
+    if (!currentUserRole || !allowedRoles.includes(currentUserRole.toLowerCase())) {
+        res.status(403).json({ message: "Forbidden: เฉพาะ admin และ super admin เท่านั้นที่สามารถลบผู้ใช้นี้ได้" });
+        return;
+    }
 
     try {
         const user = await User.findById(userId);
@@ -195,8 +264,8 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        if (userId === currentUserId) {
-            res.status(400).json({ message: "Cannot delete your own account" });
+        if (String(userId) === String(currentUserId)) {
+            res.status(400).json({ message: "คุณไม่สามารถลบบัญชีของตัวเองได้" });
             return;
         }
 
@@ -204,6 +273,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
         res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
+        console.error("Error deleting user:", error);
         res.status(500).json({ message: "Failed to delete user", error });
     }
 };

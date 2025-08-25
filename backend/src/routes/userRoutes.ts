@@ -1,5 +1,5 @@
 import express from "express";
-import { createUser, updateUser, deleteUser } from "../controllers/userController";
+import { createUser, updateUser, updateStatus, deleteUser } from "../controllers/userController";
 import { checkPermission } from "../Middleware/checkPermission";
 import { verifyToken } from '../Middleware/authMiddleware';
 import upload from '../Middleware/uploadMiddleware'; // นำเข้า middleware สำหรับอัปโหลดไฟล์
@@ -18,7 +18,15 @@ router.patch(
     updateUser
 );
 
+router.patch(
+    "/update-status",
+    verifyToken,
+    checkPermission("update"),
+    updateStatus
+);
+
+
 // ลบ user → ตรวจสิทธิ์ก่อน
-router.delete("/delete", checkPermission("delete"), deleteUser);
+router.delete("/delete", verifyToken, checkPermission("delete"), deleteUser);
 
 export default router;

@@ -8,10 +8,11 @@ export interface IUser extends Document {
     lastName: string;
     role: string;
     profile_img: string;
+    isActive: boolean;            // ← เพิ่ม isActive
     createdAt: Date;
     updatedAt: Date;
-    resetPasswordToken?: string;   // ใส่เป็น optional ก็ได้
-    resetPasswordExpires?: Date;   // ใส่เป็น optional
+    resetPasswordToken?: string;
+    resetPasswordExpires?: Date;
 }
 
 // Define the schema for the User model
@@ -40,12 +41,16 @@ const UserSchema = new Schema<IUser>(
         },
         role: {
             type: String,
-            enum: ['super admin','admin', 'manager', 'viewer', 'user'],
+            enum: ['super admin', 'admin', 'manager', 'viewer', 'user'],
             default: 'user',
         },
         profile_img: {
             type: String,
             default: 'https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg',
+        },
+        isActive: {
+            type: Boolean,
+            default: false,  // ← เพิ่ม default false
         },
         resetPasswordToken: {
             type: String,
@@ -57,11 +62,10 @@ const UserSchema = new Schema<IUser>(
         },
     },
     {
-        timestamps: true, // Automatically adds createdAt and updatedAt fields
+        timestamps: true,
     }
 );
 
-// Check if the model already exists, if so, use it; otherwise, create a new one
 const User = models.User || model<IUser>('User', UserSchema);
 
 export default User;
