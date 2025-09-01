@@ -3,13 +3,14 @@ import cors from 'cors';
 import session from 'express-session';
 import connectDB from './utils/database';
 import MongoStore from 'connect-mongo';
-
+import mongoSanitize from "express-mongo-sanitize";
 import authRoutes from './routes/authRoutes';
 import vehicleRoutes from './routes/vehicleRoutes';
 import driverRoutes from './routes/driverRoutes';
 import containers from './routes/containerRouters';
 import trackcontainers from './routes/trackcontainersRouters';
 import useRouter from './routes/userRoutes';
+import dataTodayRoutes from "./routes/dataTodayRoutes";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -55,7 +56,7 @@ app.use(
 );
 
 app.use(express.json());
-
+app.use(mongoSanitize()); // กัน NoSQL injection
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', useRouter);
@@ -63,7 +64,7 @@ app.use('/api', vehicleRoutes);
 app.use('/api', driverRoutes);
 app.use('/api', containers);
 app.use('/api', trackcontainers);
-
+app.use("/api/datatoday", dataTodayRoutes);
 // Root route
 app.get('/', (req, res) => {
     res.send('API is running...');
