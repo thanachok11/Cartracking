@@ -12,10 +12,30 @@ export const getAllDataToday = async (req: AuthenticatedRequest, res: Response):
     }
 
     // sanitize query params (ถ้ามี filter)
-    const cleanQuery = mongoSanitize.sanitize(req.query);
+    const cleanQuery = mongoSanitize.sanitize(req.query || {});
+    const cq: any = cleanQuery || {};
 
-    const data = await DataToday.find(cleanQuery).sort({ datetime_in: -1 });
-    res.status(200).json(data);
+    // whitelist allowed filters and build mongo filter
+    const filter: any = {};
+    if (cq.driver_name) filter.driver_name = String(cq.driver_name).trim();
+    if (cq.container_no) filter.container_no = String(cq.container_no).trim();
+    if (cq.head_registration) filter.head_registration = String(cq.head_registration).trim();
+
+    // handle date range: expect yyyy-mm-dd strings from frontend
+    const isYmd = (s: string) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+    const fromStr = isYmd(cq.from) ? cq.from : null;
+    const toStr = isYmd(cq.to) ? cq.to : null;
+    if (fromStr || toStr) {
+      const from = fromStr || toStr;
+      const to = toStr || fromStr || from;
+      // parse as UTC-day range (frontend sends yyyy-mm-dd)
+      const fromDate = new Date(`${from}T00:00:00.000Z`);
+      const toDate = new Date(`${to}T23:59:59.999Z`);
+      filter.datetime_in = { $gte: fromDate, $lte: toDate };
+    }
+
+    const data = await DataToday.find(filter).sort({ datetime_in: -1 });
+    res.status(200).json({ data });
   } catch (error) {
     res.status(500).json({ message: "Error fetching data", error });
   }
