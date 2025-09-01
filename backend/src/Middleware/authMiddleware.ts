@@ -1,9 +1,10 @@
 // middlewares/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload as DefaultJwtPayload } from 'jsonwebtoken';
 import User from '../models/User';
 
-interface JwtPayload {
+// ขยาย type ของ payload ให้ตรงกับสิ่งที่ encode ใน JWT
+interface JwtPayload extends DefaultJwtPayload {
     userId: string;
 }
 
@@ -16,25 +17,38 @@ export const verifyToken = async (
     res: Response,
     next: NextFunction
 ) => {
-    const token = req.headers['authorization']?.split(' ')[1];
-
-    if (!token) {
-        res.status(401).json({ success: false, message: 'No token provided' });
-        return;
-    }
-
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
 
-        const user = await User.findById(decoded.userId);
-        if (!user) {
-            res.status(404).json({ success: false, message: 'User not found' });
-            return;
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
         }
 
+        // verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token payload' });
+        }
+
+        // หาว่า user ยังอยู่ใน DB ไหม
+        const user = await User.findById(decoded.userId);
+
+        if (!user) {
+            // ✅ ตรงนี้จะ handle กรณีที่ user ถูกลบออกจาก DB แล้ว
+            return res.status(401).json({ success: false, message: 'User not found. Please login again.' });
+        }
+
+        // แนบ user เข้า req (เผื่อ controller ใช้งานต่อ)
         req.user = user;
+
         next();
-    } catch (error) {
-        res.status(401).json({ success: false, message: 'Invalid token' });
+    } catch (error: any) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ success: false, message: 'Token expired. Please login again.' });
+        }
+
+        return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 };
