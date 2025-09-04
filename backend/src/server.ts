@@ -11,6 +11,8 @@ import containers from './routes/containerRouters';
 import trackcontainers from './routes/trackcontainersRouters';
 import useRouter from './routes/userRoutes';
 import dataTodayRoutes from "./routes/dataTodayRoutes";
+import truckHeadRoutes from './routes/truckHeadRoutes';
+import truckTailRoutes from './routes/truckTailRoutes';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -65,6 +67,8 @@ app.use('/api', driverRoutes);
 app.use('/api', containers);
 app.use('/api', trackcontainers);
 app.use("/api/datatoday", dataTodayRoutes);
+app.use('/api', truckHeadRoutes);
+app.use('/api', truckTailRoutes);
 // Root route
 app.get('/', (req, res) => {
     res.send('API is running...');
