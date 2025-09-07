@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import DataToday from "../models/DataToday";
+import cloudinary from '../config/cloudinary';
 import { AuthenticatedRequest } from "../Middleware/authMiddleware";
 import mongoSanitize from "express-mongo-sanitize";
 
@@ -74,10 +75,33 @@ export const createDataToday = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    const cleanBody = mongoSanitize.sanitize(req.body);
+    const cleanBody: any = mongoSanitize.sanitize(req.body);
+
+    // support booking_id in body
+    const bookingId = cleanBody.booking_id || cleanBody.bookingId || undefined;
+
+    // handle optional booking image upload (req.file) → upload to Cloudinary
+    if (req.file) {
+      try {
+        const fileBuffer = req.file.buffer;
+        await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream({ resource_type: 'auto' }, async (err, result) => {
+            if (err || !result) return reject(err || new Error('upload failed'));
+            cleanBody.booking_image = result.secure_url;
+            resolve(result);
+          }).end(fileBuffer);
+        });
+      } catch (err) {
+        console.error('Error uploading booking image:', err);
+        res.status(500).json({ message: 'Failed to upload booking image' });
+        return;
+      }
+    }
 
     const newData = new DataToday({
       ...cleanBody,
+      booking_id: bookingId,
+      booking_image: cleanBody.booking_image,
       createdBy: req.user._id, // ระบุผู้สร้าง
     });
 
@@ -101,11 +125,32 @@ export const updateDataToday = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    const cleanBody = mongoSanitize.sanitize(req.body);
+    const cleanBody: any = mongoSanitize.sanitize(req.body);
+
+    // support booking_id update
+    const bookingId = cleanBody.booking_id || cleanBody.bookingId || undefined;
+
+    // handle optional booking image upload
+    if (req.file) {
+      try {
+        const fileBuffer = req.file.buffer;
+        await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream({ resource_type: 'auto' }, async (err, result) => {
+            if (err || !result) return reject(err || new Error('upload failed'));
+            cleanBody.booking_image = result.secure_url;
+            resolve(result);
+          }).end(fileBuffer);
+        });
+      } catch (err) {
+        console.error('Error uploading booking image:', err);
+        res.status(500).json({ message: 'Failed to upload booking image' });
+        return;
+      }
+    }
 
     const updatedData = await DataToday.findByIdAndUpdate(
       req.params.id,
-      { ...cleanBody, updatedBy: req.user._id }, // ระบุผู้แก้ไข
+      { ...cleanBody, booking_id: bookingId, booking_image: cleanBody.booking_image, updatedBy: req.user._id }, // ระบุผู้แก้ไข
       { new: true, runValidators: true }
     );
 

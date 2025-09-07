@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
+import { buffer } from "stream/consumers";
 
 export interface IDataToday extends Document {
     datetime_in: Date;
@@ -10,6 +11,8 @@ export interface IDataToday extends Document {
     station_in: string;
     station_out: string;
     companyname: string;
+    booking_id?: string;
+    booking_image?: string;
     createdBy: Schema.Types.ObjectId; // เพิ่ม
     updatedBy?: Schema.Types.ObjectId;
     deletedBy?: Schema.Types.ObjectId;
@@ -24,7 +27,8 @@ const DataTodaySchema: Schema<IDataToday> = new Schema(
         container_no: { type: String, required: true, trim: true, index: true },
         station_in: { type: String, required: true, trim: true },
         companyname: { type: String, required: true, trim: true, index: true },
-
+        booking_id: { type: String, trim: true },
+        booking_image: { type: String, required: false },
         createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
         updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
         deletedBy: { type: Schema.Types.ObjectId, ref: "User" },

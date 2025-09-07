@@ -7,11 +7,12 @@ import {
     getDataTodayById,
 } from "../controllers/datatodayController";
 import { verifyToken } from '../Middleware/authMiddleware';
+import upload from '../Middleware/uploadMiddleware';
 
 const router = express.Router();
 
 //  CREATE (POST)
-router.post("/create",  verifyToken , createDataToday);
+router.post("/create",  verifyToken, upload.single('booking_image') , createDataToday);
 //  READ ALL
 router.get("/", verifyToken, getAllDataToday);
 
@@ -19,7 +20,7 @@ router.get("/", verifyToken, getAllDataToday);
 router.get("/:id", verifyToken, getDataTodayById);
 
 //  UPDATE (PATCH)
-router.patch("/update/:id",  verifyToken , updateDataToday);
+router.patch("/update/:id",  verifyToken, upload.single('booking_image') , updateDataToday);
 
 //  DELETE (DELETE)
 router.delete("/delete/:id",  verifyToken , deleteDataToday);
