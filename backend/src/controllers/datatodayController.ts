@@ -4,35 +4,65 @@ import cloudinary from '../config/cloudinary';
 import { AuthenticatedRequest } from "../Middleware/authMiddleware";
 import mongoSanitize from "express-mongo-sanitize";
 
+const allowedRoles = ["admin", "super admin", "manager"];
+
+function checkUser(req: AuthenticatedRequest, res: Response): boolean {
+  if (!req.user?._id) {
+    res.status(401).json({ message: "Unauthorized: missing user info" });
+    return false;
+  }
+  return true;
+}
+
+function checkRole(req: AuthenticatedRequest, res: Response): boolean {
+  if (!allowedRoles.includes(req.user.role)) {
+    res.status(403).json({ message: "Forbidden: only admin can perform this action" });
+    return false;
+  }
+  return true;
+}
+
+async function handleImageUpload(req: AuthenticatedRequest, cleanBody: any, res: Response): Promise<boolean> {
+  if (req.file) {
+    try {
+      const fileBuffer = req.file.buffer;
+      await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream({ resource_type: 'auto' }, (err, result) => {
+          if (err || !result) return reject(err || new Error('upload failed'));
+          cleanBody.booking_image = result.secure_url;
+          resolve(result);
+        }).end(fileBuffer);
+      });
+    } catch (err) {
+      console.error('Error uploading booking image:', err);
+      res.status(500).json({ message: 'Failed to upload booking image' });
+      return false;
+    }
+  }
+  return true;
+}
+
 //  GET ALL
 export const getAllDataToday = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?._id) {
-      res.status(401).json({ message: "Unauthorized: missing user info" });
-      return;
-    }
+    if (!checkUser(req, res)) return;
 
-    // sanitize query params (ถ้ามี filter)
     const cleanQuery = mongoSanitize.sanitize(req.query || {});
-    const cq: any = cleanQuery || {};
-
-    // whitelist allowed filters and build mongo filter
     const filter: any = {};
-    if (cq.driver_name) filter.driver_name = String(cq.driver_name).trim();
-    if (cq.container_no) filter.container_no = String(cq.container_no).trim();
-    if (cq.head_registration) filter.head_registration = String(cq.head_registration).trim();
+    if (cleanQuery.driver_name) filter.driver_name = String(cleanQuery.driver_name).trim();
+    if (cleanQuery.container_no) filter.container_no = String(cleanQuery.container_no).trim();
+    if (cleanQuery.head_registration) filter.head_registration = String(cleanQuery.head_registration).trim();
 
-    // handle date range: expect yyyy-mm-dd strings from frontend
     const isYmd = (s: string) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-    const fromStr = isYmd(cq.from) ? cq.from : null;
-    const toStr = isYmd(cq.to) ? cq.to : null;
+    const fromStr = isYmd(String(cleanQuery.from ?? "")) ? String(cleanQuery.from) : null;
+    const toStr = isYmd(String(cleanQuery.to ?? "")) ? String(cleanQuery.to) : null;
     if (fromStr || toStr) {
       const from = fromStr || toStr;
       const to = toStr || fromStr || from;
-      // parse as UTC-day range (frontend sends yyyy-mm-dd)
-      const fromDate = new Date(`${from}T00:00:00.000Z`);
-      const toDate = new Date(`${to}T23:59:59.999Z`);
-      filter.datetime_in = { $gte: fromDate, $lte: toDate };
+      filter.datetime_in = {
+        $gte: new Date(`${from}T00:00:00.000Z`),
+        $lte: new Date(`${to}T23:59:59.999Z`)
+      };
     }
 
     const data = await DataToday.find(filter).sort({ datetime_in: -1 });
@@ -45,17 +75,13 @@ export const getAllDataToday = async (req: AuthenticatedRequest, res: Response):
 //  GET BY ID
 export const getDataTodayById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?._id) {
-      res.status(401).json({ message: "Unauthorized: missing user info" });
-      return;
-    }
+    if (!checkUser(req, res)) return;
 
     const data = await DataToday.findById(req.params.id);
     if (!data) {
       res.status(404).json({ message: "Data not found" });
       return;
     }
-
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ message: "Error fetching data", error });
@@ -65,44 +91,18 @@ export const getDataTodayById = async (req: AuthenticatedRequest, res: Response)
 // CREATE
 export const createDataToday = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?._id) {
-      res.status(401).json({ message: "Unauthorized: missing user info" });
-      return;
-    }
-
-    if (!["admin", "super admin", "manager"].includes(req.user.role)) {
-      res.status(403).json({ message: "Forbidden: only admin can create containers" });
-      return;
-    }
+    if (!checkUser(req, res) || !checkRole(req, res)) return;
 
     const cleanBody: any = mongoSanitize.sanitize(req.body);
-
-    // support booking_id in body
     const bookingId = cleanBody.booking_id || cleanBody.bookingId || undefined;
 
-    // handle optional booking image upload (req.file) → upload to Cloudinary
-    if (req.file) {
-      try {
-        const fileBuffer = req.file.buffer;
-        await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream({ resource_type: 'auto' }, async (err, result) => {
-            if (err || !result) return reject(err || new Error('upload failed'));
-            cleanBody.booking_image = result.secure_url;
-            resolve(result);
-          }).end(fileBuffer);
-        });
-      } catch (err) {
-        console.error('Error uploading booking image:', err);
-        res.status(500).json({ message: 'Failed to upload booking image' });
-        return;
-      }
-    }
+    if (!(await handleImageUpload(req, cleanBody, res))) return;
 
     const newData = new DataToday({
       ...cleanBody,
       booking_id: bookingId,
       booking_image: cleanBody.booking_image,
-      createdBy: req.user._id, // ระบุผู้สร้าง
+      createdBy: req.user._id,
     });
 
     const savedData = await newData.save();
@@ -115,42 +115,16 @@ export const createDataToday = async (req: AuthenticatedRequest, res: Response):
 // UPDATE
 export const updateDataToday = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?._id) {
-      res.status(401).json({ message: "Unauthorized: missing user info" });
-      return;
-    }
-
-    if (!["admin", "super admin", "manager"].includes(req.user.role)) {
-      res.status(403).json({ message: "Forbidden: only admin can update containers" });
-      return;
-    }
+    if (!checkUser(req, res) || !checkRole(req, res)) return;
 
     const cleanBody: any = mongoSanitize.sanitize(req.body);
-
-    // support booking_id update
     const bookingId = cleanBody.booking_id || cleanBody.bookingId || undefined;
 
-    // handle optional booking image upload
-    if (req.file) {
-      try {
-        const fileBuffer = req.file.buffer;
-        await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream({ resource_type: 'auto' }, async (err, result) => {
-            if (err || !result) return reject(err || new Error('upload failed'));
-            cleanBody.booking_image = result.secure_url;
-            resolve(result);
-          }).end(fileBuffer);
-        });
-      } catch (err) {
-        console.error('Error uploading booking image:', err);
-        res.status(500).json({ message: 'Failed to upload booking image' });
-        return;
-      }
-    }
+    if (!(await handleImageUpload(req, cleanBody, res))) return;
 
     const updatedData = await DataToday.findByIdAndUpdate(
       req.params.id,
-      { ...cleanBody, booking_id: bookingId, booking_image: cleanBody.booking_image, updatedBy: req.user._id }, // ระบุผู้แก้ไข
+      { ...cleanBody, booking_id: bookingId, booking_image: cleanBody.booking_image, updatedBy: req.user._id },
       { new: true, runValidators: true }
     );
 
@@ -158,7 +132,6 @@ export const updateDataToday = async (req: AuthenticatedRequest, res: Response):
       res.status(404).json({ message: "Data not found" });
       return;
     }
-
     res.status(200).json(updatedData);
   } catch (error) {
     res.status(400).json({ message: "Error updating data", error });
@@ -168,19 +141,11 @@ export const updateDataToday = async (req: AuthenticatedRequest, res: Response):
 // DELETE
 export const deleteDataToday = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user?._id) {
-      res.status(401).json({ message: "Unauthorized: missing user info" });
-      return;
-    }
-
-    if (!["admin", "super admin", "manager"].includes(req.user.role)) {
-      res.status(403).json({ message: "Forbidden: only admin can delete containers" });
-      return;
-    }
+    if (!checkUser(req, res) || !checkRole(req, res)) return;
 
     const deletedData = await DataToday.findByIdAndUpdate(
       req.params.id,
-      { deletedBy: req.user._id }, // ระบุผู้ลบ
+      { deletedBy: req.user._id },
       { new: true }
     );
 
@@ -189,9 +154,7 @@ export const deleteDataToday = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    // สามารถลบจริงหรือใช้ soft-delete
     await DataToday.findByIdAndDelete(req.params.id);
-
     res.status(200).json({ message: "Data deleted successfully", deletedBy: req.user._id });
   } catch (error) {
     res.status(500).json({ message: "Error deleting data", error });
