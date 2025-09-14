@@ -11,7 +11,4 @@ npm install express-mongo-sanitize
 start
 npm run dev
 แต่ไม่ต้องเปิดก็ได้ตอนนี้ข้อมูลอยู่บน host รอมันรันประมาณ1 นาที
-
-rm -rf node_modules package-lock.json
-npm install
 ```

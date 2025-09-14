@@ -87,12 +87,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             username: user.username,
             role: user.role,
             profile_img: user.profile_img,
+            pagePermissions: user.getPermissions(),
         }, process.env.JWT_SECRET as string, { expiresIn: '20m' });
 
         res.status(200).json({
             message: 'Login successful',
             token,
             role: user.role,
+            pagePermissions: user.getPermissions(),
         });
 
     } catch (error) {
@@ -137,9 +139,15 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
             username: user.username,
             role: user.role,
             profile_img: user.profile_img,
+            pagePermissions: user.getPermissions(),
         }, process.env.JWT_SECRET as string, { expiresIn: "20m" });
 
-        res.status(200).json({ message: "Token renewed successfully", token: newToken });
+        res.status(200).json({ 
+            message: "Token renewed successfully", 
+            token: newToken,
+            role: user.role,
+            pagePermissions: user.getPermissions(),
+        });
     } catch (error) {
         console.error("Error renewing token:", error);
         res.status(500).json({ message: "Failed to renew token", error });

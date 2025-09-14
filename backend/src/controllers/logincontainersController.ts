@@ -47,8 +47,24 @@ export const loginContainers = async (req: Request, res: Response): Promise<void
         console.log('Received cookie:', cookie);
         console.log('Received token:', token);
 
-        // ตั้งค่า cookie กลับไปให้ browser
-        res.setHeader('Set-Cookie', cookie + '; HttpOnly; Path=/; SameSite=Lax');
+        // ตั้งค่า cookie กลับไปให้ browser under a distinct name to avoid overwriting app session
+        // cookie (external) often includes its own name (e.g. PHPSESSID). Extract value and set under
+        // our own cookie name so we don't overwrite the server's session cookie.
+        try {
+            const raw = Array.isArray(cookie) ? cookie[0] : cookie; // defensive
+            const pair = raw.split(';')[0]; // "NAME=VALUE"
+            const value = pair.split('=')[1] || '';
+            // use res.cookie to avoid replacing existing session cookie name (PHPSESSID)
+            res.cookie('ucontainers_session', value, {
+                httpOnly: true,
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            });
+        } catch (e) {
+            // fallback to sending raw header if parsing fails
+            res.setHeader('Set-Cookie', cookie + '; HttpOnly; Path=/; SameSite=Lax');
+        }
 
         // ส่ง token กลับใน response
         res.json({ success: true, message: 'Login success', token });
@@ -68,7 +84,19 @@ export const renewCookie = async (req: Request, res: Response): Promise<void> =>
         const cookie = await performContainerLogin();
         console.log('🔄 Cookie renewed:', cookie);
 
-        res.setHeader('Set-Cookie', cookie + '; HttpOnly; Path=/; SameSite=Lax');
+        try {
+            const raw = Array.isArray(cookie) ? cookie[0] : cookie;
+            const pair = raw.split(';')[0];
+            const value = pair.split('=')[1] || '';
+            res.cookie('ucontainers_session', value, {
+                httpOnly: true,
+                path: '/',
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            });
+        } catch (e) {
+            res.setHeader('Set-Cookie', cookie + '; HttpOnly; Path=/; SameSite=Lax');
+        }
         res.json({ success: true, message: 'Cookie renewed' });
     } catch (err: any) {
         console.error('Renew failed:', err);
