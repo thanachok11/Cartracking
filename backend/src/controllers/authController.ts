@@ -60,93 +60,104 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     try {
         const user = await User.findOne({ email });
-        console.log('User found:', user);
+        console.log("User found:", user);
 
         if (!user) {
-            res.status(400).json({ message: 'User not found' });
+            res.status(400).json({ message: "User not found" });
             return;
         }
 
-        // ✅ เช็คสถานะบัญชี
+        //  เช็คสถานะบัญชี
         if (!user.isActive) {
-            res.status(403).json({ message: 'บัญชีนี้ถูกปิดใช้งานอยู่ กรุณาติดต่อ Admin' });
+            res.status(403).json({ message: "บัญชีนี้ถูกปิดใช้งานอยู่ กรุณาติดต่อ Admin" });
             return;
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            res.status(400).json({ message: 'Incorrect password' });
+            res.status(400).json({ message: "Incorrect password" });
             return;
         }
 
-        const token = jwt.sign({
-            userId: user._id,
-            email: user.email,
-            firstname: user.firstName,
-            lastname: user.lastName,
-            username: user.username,
-            role: user.role,
-            profile_img: user.profile_img,
-            pagePermissions: user.getPermissions(),
-        }, process.env.JWT_SECRET as string, { expiresIn: '20m' });
+        //  allowedPages ตรงนี้สามารถมาจาก field ใน user document
+        const allowedPages = user.allowedPages || [];
+
+        const token = jwt.sign(
+            {
+                userId: user._id,
+                email: user.email,
+                firstname: user.firstName,
+                lastname: user.lastName,
+                username: user.username,
+                role: user.role,
+                profile_img: user.profile_img,
+                allowedPages, // <<<< เก็บลง token ด้วย
+            },
+            process.env.JWT_SECRET as string,
+            { expiresIn: "20m" }
+        );
 
         res.status(200).json({
-            message: 'Login successful',
+            message: "Login successful",
             token,
             role: user.role,
-            pagePermissions: user.getPermissions(),
+            allowedPages, // <<<< ส่งกลับไป frontend
         });
-
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Login failed', error });
+        console.error("Login error:", error);
+        res.status(500).json({ message: "Login failed", error });
     }
 };
 
-
 export const renewToken = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ดึง token เก่าจาก header หรือ body (แล้วแต่ design)
-        const oldToken = req.headers.authorization?.split(" ")[1] || req.body.token;
+        const oldToken =
+            req.headers.authorization?.split(" ")[1] || req.body.token;
 
         if (!oldToken) {
             res.status(401).json({ message: "No token provided" });
             return;
         }
 
-        // verify token แบบ ignore expiration เพื่อตรวจสอบ payload
+        // verify token แบบ ignore expiration
         let decoded: any;
         try {
-            decoded = jwt.verify(oldToken, process.env.JWT_SECRET as string, { ignoreExpiration: true });
+            decoded = jwt.verify(oldToken, process.env.JWT_SECRET as string, {
+                ignoreExpiration: true,
+            });
         } catch (err) {
             res.status(401).json({ message: "Invalid token" });
             return;
         }
 
-        // หา user จาก decoded token
         const user = await User.findById(decoded.userId);
         if (!user) {
             res.status(404).json({ message: "User not found" });
             return;
         }
 
-        // สร้าง token ใหม่ (renew)
-        const newToken = jwt.sign({
-            userId: user._id,
-            email: user.email,
-            firstname: user.firstName,
-            lastname: user.lastName,
-            username: user.username,
-            role: user.role,
-            profile_img: user.profile_img,
-            pagePermissions: user.getPermissions(),
-        }, process.env.JWT_SECRET as string, { expiresIn: "20m" });
+        //  ดึง allowedPages จาก user
+        const allowedPages = user.allowedPages || [];
 
-        res.status(200).json({ 
-            message: "Token renewed successfully", 
+        const newToken = jwt.sign(
+            {
+                userId: user._id,
+                email: user.email,
+                firstname: user.firstName,
+                lastname: user.lastName,
+                username: user.username,
+                role: user.role,
+                profile_img: user.profile_img,
+                allowedPages, 
+            },
+            process.env.JWT_SECRET as string,
+            { expiresIn: "20m" }
+        );
+
+        res.status(200).json({
+            message: "Token renewed successfully",
             token: newToken,
-            role: user.role,
-            pagePermissions: user.getPermissions(),
+            allowedPages,
         });
     } catch (error) {
         console.error("Error renewing token:", error);

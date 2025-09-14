@@ -8,12 +8,11 @@ import authRoutes from './routes/authRoutes';
 import vehicleRoutes from './routes/vehicleRoutes';
 import driverRoutes from './routes/driverRoutes';
 import containers from './routes/containerRouters';
-import trackcontainers from './routes/trackcontainersRouters';
 import useRouter from './routes/userRoutes';
 import dataTodayRoutes from "./routes/dataTodayRoutes";
 import truckHeadRoutes from './routes/truckHeadRoutes';
 import truckTailRoutes from './routes/truckTailRoutes';
-import permissionRoutes from './routes/permissionRoutes';
+import allowedPagesRoutes from "./routes/allowedPagesRoutes";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -66,11 +65,11 @@ app.use('/api/auth', useRouter);
 app.use('/api', vehicleRoutes);
 app.use('/api', driverRoutes);
 app.use('/api', containers);
-app.use('/api', trackcontainers);
 app.use("/api/datatoday", dataTodayRoutes);
 app.use('/api', truckHeadRoutes);
 app.use('/api', truckTailRoutes);
-app.use('/api', permissionRoutes);
+app.use("/api/allowed-pages", allowedPagesRoutes);
+
 // Root route
 app.get('/', (req, res) => {
     res.send('API is running...');
