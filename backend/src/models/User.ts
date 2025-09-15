@@ -8,7 +8,7 @@ export interface IUser extends Document {
     role: string;
     profile_img: string;
     isActive: boolean;
-    allowedPages: string[];  // หน้าเฉพาะของ user
+    allowedPages: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -22,10 +22,14 @@ const UserSchema = new Schema<IUser>(
         role: { type: String, enum: ['super admin', 'admin', 'manager', 'viewer', 'user'], default: 'user' },
         profile_img: { type: String, default: 'https://res.cloudinary.com/dboau6axv/image/upload/v1735641179/qa9dfyxn8spwm0nwtako.jpg' },
         isActive: { type: Boolean, default: false },
-        allowedPages: { type: [String], default: [] },  // ← เพิ่มตรงนี้
+        allowedPages: { 
+            type: [String], 
+            default: ['map', 'dashboard', 'vehicles', 'vehiclestail'], 
+        },
     },
     { timestamps: true }
 );
+
 
 const User = models.User || model<IUser>('User', UserSchema);
 export default User;
