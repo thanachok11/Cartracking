@@ -17,25 +17,25 @@ import allowedPagesRoutes from "./routes/allowedPagesRoutes";
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-// เชื่อมต่อ MongoDB
+// ✅ เชื่อมต่อ MongoDB
 connectDB();
 
-// CORS options (Frontend URL)
+// ✅ CORS (เพิ่ม * ชั่วคราว เผื่อ Railway health check)
 const corsOptions = {
     origin: [
-        'http://localhost:3000',              // สำหรับ dev
-        'https://cartracking.up.railway.app', // สำหรับ production
+        'http://localhost:3000',
+        'https://cartracking.up.railway.app',
         'https://porchoengroup.com',
-        'https://www.porchoengroup.com'
+        'https://www.porchoengroup.com',
+        '*'
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
 };
-
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // ให้ตอบ preflight ทุก route
 
-// Session config (ใช้ MongoDB store แทน MemoryStore)
+// ✅ Session config (flexible ตาม environment)
 app.use(
     session({
         name: 'PHPSESSID',
@@ -50,16 +50,17 @@ app.use(
         }),
         cookie: {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // true เมื่อรันบน Railway (HTTPS)
-            sameSite: 'none', // ต้องใช้ none เพื่อ cross-origin cookie
+            secure: process.env.NODE_ENV === 'production', // ใช้ secure เมื่อ production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 1000 * 60 * 60 * 24, // 1 วัน
         },
     })
 );
 
 app.use(express.json());
-app.use(mongoSanitize()); // กัน NoSQL injection
-// API routes
+app.use(mongoSanitize());
+
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', useRouter);
 app.use('/api', vehicleRoutes);
@@ -70,12 +71,12 @@ app.use('/api', truckHeadRoutes);
 app.use('/api', truckTailRoutes);
 app.use("/api/allowed-pages", allowedPagesRoutes);
 
-// Root route
+// ✅ Root route (Railway ใช้ health check ตรงนี้)
 app.get('/', (req, res) => {
-    res.send('API is running...');
+    res.status(200).send('🚀 API is running...');
 });
 
-// Start server
+// ✅ Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
