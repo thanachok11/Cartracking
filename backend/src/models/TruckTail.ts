@@ -2,6 +2,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface ITruckTail extends Document {
     licensePlate: string;      // เลขทะเบียน
+    companyName: string;
     createdBy: Types.ObjectId; // ผู้สร้างข้อมูล (อ้างอิง User)
 }
 
@@ -12,6 +13,12 @@ const truckTailSchema = new Schema<ITruckTail>(
             required: true,
             unique: true,
             trim: true,
+        },
+        companyName:{
+            type: String,
+            required: true,
+            trim: true,
+            
         },
         createdBy: {
             type: Schema.Types.ObjectId,
