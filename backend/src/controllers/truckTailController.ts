@@ -13,7 +13,7 @@ export const createTruckTail = async (req: AuthenticatedRequest, res: Response):
             return;
         }
 
-        const { licensePlate } = req.body;
+        const { licensePlate ,companyName} = req.body;
 
         if (!licensePlate) {
             res.status(400).json({ message: 'Please provide licensePlate' });
@@ -22,6 +22,7 @@ export const createTruckTail = async (req: AuthenticatedRequest, res: Response):
 
         const truckTailData: Partial<ITruckTail> = {
             licensePlate,
+            companyName,
             createdBy: req.user._id,
         };
 
