@@ -13,7 +13,7 @@ import dataTodayRoutes from "./routes/dataTodayRoutes";
 import truckHeadRoutes from './routes/truckHeadRoutes';
 import truckTailRoutes from './routes/truckTailRoutes';
 import allowedPagesRoutes from "./routes/allowedPagesRoutes";
-
+import workOrderRoutes from "./routes/workOrderRoutes"
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -62,6 +62,7 @@ app.use(mongoSanitize());
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/workorders',workOrderRoutes);
 app.use('/api/auth', useRouter);
 app.use('/api', vehicleRoutes);
 app.use('/api', driverRoutes);
