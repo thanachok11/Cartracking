@@ -38,14 +38,45 @@ export const createWorkOrder = async (req: AuthenticatedRequest, res: Response):
     }
 };
 
-// Get all WorkOrders (ทุกคนที่ login เข้ามาได้)
-export const getAllWorkOrders = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+// Get all WorkOrders with optional search by workOrderNumber (ทุกคนที่ login เข้ามาได้)
+export const getAllWorkOrders = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const workOrders = await WorkOrder.find().sort({ issueDate: -1 });
+        const { search, workOrderNumber } = req.query;
+        
+        // Build query filter
+        let filter: any = {};
+        
+        if (workOrderNumber) {
+            // Exact match for workOrderNumber
+            filter.workOrderNumber = workOrderNumber;
+        } else if (search) {
+            // Partial match search in workOrderNumber
+            filter.workOrderNumber = { $regex: search, $options: 'i' };
+        }
+        
+        const workOrders = await WorkOrder.find(filter).sort({ issueDate: -1 });
         res.status(200).json(workOrders);
     } catch (error) {
         console.error("Error fetching WorkOrders:", error);
         res.status(500).json({ message: "Failed to fetch WorkOrders" });
+    }
+};
+
+// Get WorkOrder by workOrderNumber
+export const getWorkOrderByNumber = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { workOrderNumber } = req.params;
+        const workOrder = await WorkOrder.findOne({ workOrderNumber });
+
+        if (!workOrder) {
+            res.status(404).json({ message: "WorkOrder not found" });
+            return;
+        }
+
+        res.status(200).json(workOrder);
+    } catch (error) {
+        console.error("Error fetching WorkOrder by number:", error);
+        res.status(500).json({ message: "Failed to fetch WorkOrder" });
     }
 };
 
