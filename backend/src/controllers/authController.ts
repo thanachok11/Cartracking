@@ -10,15 +10,23 @@ import { AuthenticatedRequest } from '../Middleware/authMiddleware';
 // ฟังก์ชันสำหรับการดึงข้อมูลผู้ใช้ทั้งหมด
 export const showAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-        // ค้นหาผู้ใช้ทั้งหมดจากฐานข้อมูล
         const users = await User.find();
 
-        // ส่งข้อมูลผู้ใช้ทั้งหมดกลับไปในรูปแบบ JSON
-        res.status(200).json({ users });
+        const now = Date.now();
+        const withStatus = users.map(u => {
+            const isOnline = u.isOnline && (now - new Date(u.lastActive).getTime()) < 2 * 60 * 1000;
+            return {
+                ...u.toObject(),
+                isOnline,
+            };
+        });
+
+        res.status(200).json({ users: withStatus });
     } catch (error) {
         res.status(500).json({ message: 'Failed to retrieve users', error });
     }
 };
+
 
 
 // ฟังก์ชันสำหรับการลงทะเบียน
@@ -54,60 +62,63 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         res.status(500).json({ message: 'Registration failed', error });
     }
 };
-
 export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
-
     try {
         const user = await User.findOne({ email });
-        console.log("User found:", user);
-
         if (!user) {
             res.status(400).json({ message: "User not found" });
             return;
         }
-
-        //  เช็คสถานะบัญชี
         if (!user.isActive) {
             res.status(403).json({ message: "บัญชีนี้ถูกปิดใช้งานอยู่ กรุณาติดต่อ Admin" });
             return;
         }
-
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             res.status(400).json({ message: "Incorrect password" });
             return;
         }
-
-        //  allowedPages ตรงนี้สามารถมาจาก field ใน user document
+        // อัปเดตสถานะออนไลน์
+        user.isOnline = true;
+        user.lastActive = new Date();
+        await user.save();
         const allowedPages = user.allowedPages || [];
-
         const token = jwt.sign(
             {
                 userId: user._id,
                 email: user.email,
                 firstname: user.firstName,
                 lastname: user.lastName,
-                username: user.username,
                 role: user.role,
                 profile_img: user.profile_img,
-                allowedPages, // <<<< เก็บลง token ด้วย
+                allowedPages,
             },
             process.env.JWT_SECRET as string,
             { expiresIn: "20m" }
         );
-
         res.status(200).json({
             message: "Login successful",
             token,
-            role: user.role,
-            allowedPages, // <<<< ส่งกลับไป frontend
+            user: {
+                _id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                profile_img: user.profile_img,
+                isOnline: user.isOnline,
+                lastActive: user.lastActive,
+                allowedPages
+            }
         });
+
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ message: "Login failed", error });
     }
 };
+
 
 export const renewToken = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -136,7 +147,11 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        //  ดึง allowedPages จาก user
+        // update lastActive และ isOnline
+        user.lastActive = new Date();
+        user.isOnline = true;
+        await user.save();
+
         const allowedPages = user.allowedPages || [];
 
         const newToken = jwt.sign(
@@ -145,10 +160,9 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
                 email: user.email,
                 firstname: user.firstName,
                 lastname: user.lastName,
-                username: user.username,
                 role: user.role,
                 profile_img: user.profile_img,
-                allowedPages, 
+                allowedPages,
             },
             process.env.JWT_SECRET as string,
             { expiresIn: "20m" }
@@ -157,13 +171,50 @@ export const renewToken = async (req: Request, res: Response): Promise<void> => 
         res.status(200).json({
             message: "Token renewed successfully",
             token: newToken,
-            allowedPages,
+            user: {
+                _id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                profile_img: user.profile_img,
+                isOnline: user.isOnline,
+                lastActive: user.lastActive,
+                allowedPages
+            }
         });
     } catch (error) {
         console.error("Error renewing token:", error);
         res.status(500).json({ message: "Failed to renew token", error });
     }
 };
+
+export const logout = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                isOnline: false,
+                lastActive: new Date(),
+            },
+            { new: true }
+        );
+        if (updatedUser) {            
+        } else {
+            console.warn(`⚠️ Logout: userId ${userId} not found in DB`);
+        }
+        res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+        console.error("❌ Logout error:", error);
+        res.status(500).json({ message: "Logout failed", error });
+    }
+};
+
 
 
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
