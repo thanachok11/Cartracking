@@ -8,7 +8,7 @@ export const createWorkOrder = async (req: AuthenticatedRequest, res: Response):
         const workData: Partial<IWorkOrder> = req.body;
 
         // Check permission
-        if (!req.userRole || !["manager", "admin", "super admin"].includes(req.userRole)) {
+        if (!req.userRole || !["user","manager", "admin", "super admin"].includes(req.userRole)) {
             res.status(403).json({ message: "Forbidden: insufficient permissions" });
             return;
         }
