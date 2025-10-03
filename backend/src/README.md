@@ -7,6 +7,7 @@ npm install --save-dev @types/express-session nodemailer
 npm install multer cloudinary 
 npm install nodemailer connect-mongo
 npm install express-mongo-sanitize
+npm install xlsx multer
 
 start
 npm run dev

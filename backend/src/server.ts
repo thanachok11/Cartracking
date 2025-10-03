@@ -17,10 +17,10 @@ import workOrderRoutes from "./routes/workOrderRoutes"
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-// ✅ เชื่อมต่อ MongoDB
+//  เชื่อมต่อ MongoDB
 connectDB();
 
-// ✅ CORS (เพิ่ม * ชั่วคราว เผื่อ Railway health check)
+//  CORS (เพิ่ม * ชั่วคราว เผื่อ Railway health check)
 const corsOptions = {
     origin: [
         'http://localhost:3000',
@@ -35,7 +35,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // ให้ตอบ preflight ทุก route
 
-// ✅ Session config (flexible ตาม environment)
+//  Session config (flexible ตาม environment)
 app.use(
     session({
         name: 'PHPSESSID',
@@ -60,7 +60,7 @@ app.use(
 app.use(express.json());
 app.use(mongoSanitize());
 
-// ✅ Routes
+//  Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/workorders',workOrderRoutes);
 app.use('/api/auth', useRouter);
@@ -72,12 +72,12 @@ app.use('/api', truckHeadRoutes);
 app.use('/api', truckTailRoutes);
 app.use("/api/allowed-pages", allowedPagesRoutes);
 
-// ✅ Root route (Railway ใช้ health check ตรงนี้)
+//  Root route (Railway ใช้ health check ตรงนี้)
 app.get('/', (req, res) => {
     res.status(200).send('🚀 API is running...');
 });
 
-// ✅ Start server
+//  Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

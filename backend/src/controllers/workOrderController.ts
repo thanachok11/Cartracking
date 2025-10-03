@@ -1,6 +1,8 @@
 import { Response } from "express";
 import WorkOrder, { IWorkOrder } from "../models/WorkOrder";
 import { AuthenticatedRequest } from "../Middleware/authMiddleware"; // type request ที่มี userId, role
+import XLSX from "xlsx";
+import { excelDateToJSDate } from "../utils/excelHelpers";
 
 // Create WorkOrder (เฉพาะ role >= manager)
 export const createWorkOrder = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -161,5 +163,108 @@ export const deleteWorkOrder = async (req: AuthenticatedRequest, res: Response):
     } catch (error) {
         console.error("Error deleting WorkOrder:", error);
         res.status(500).json({ message: "Failed to delete WorkOrder" });
+    }
+};
+
+
+// =============================
+// 2) Confirm Import
+// =============================
+export const confirmWorkOrders = async (req: any, res: any) => {
+    try {
+        const rows = req.body?.rows;
+        if (!rows || !Array.isArray(rows) || rows.length === 0) {
+            return res.status(400).json({ code: "NO_ROWS", message: "ไม่มีข้อมูลสำหรับบันทึก" });
+        }
+
+        // ✅ Map ข้อมูลตาม schema
+        const workOrders = rows.map((row: any) => ({
+            issueDate: row.issueDate ? excelDateToJSDate(row.issueDate) : null,
+            workOrderNumber: row.workOrderNumber?.trim(),
+            product: row.product?.trim(),
+            driverName: row.driverName?.trim(),
+            driverPhone: row.driverPhone?.trim(),
+            headPlate: row.headPlate?.trim(),
+            tailPlate: row.tailPlate?.trim(),
+            containerNumber: row.containerNumber?.trim(),
+            companyName: row.companyName?.trim(),
+            description: row.description?.trim() || "",
+            createdBy: req.userId,
+        }));
+
+        // ✅ Validate required fields
+        const invalid = workOrders.filter(
+            (w) =>
+                !w.issueDate ||
+                !w.workOrderNumber ||
+                !w.product ||
+                !w.driverName ||
+                !w.driverPhone ||
+                !w.headPlate ||
+                !w.tailPlate ||
+                !w.containerNumber ||
+                !w.companyName
+        );
+        if (invalid.length > 0) {
+            return res.status(400).json({
+                code: "INVALID_ROWS",
+                message: `พบ ${invalid.length} แถวที่ข้อมูลไม่ครบ`,
+                invalid,
+            });
+        }
+
+        // ✅ ตรวจสอบ duplicate workOrderNumber ใน DB
+        const numbers = workOrders.map((w) => w.workOrderNumber);
+        const existing = await WorkOrder.find({ workOrderNumber: { $in: numbers } }, "workOrderNumber");
+        if (existing.length > 0) {
+            return res.status(400).json({
+                code: "DUPLICATE",
+                message: "พบเลขที่ใบสั่งงานซ้ำในระบบ",
+                duplicates: existing.map((e) => e.workOrderNumber),
+            });
+        }
+
+        // ✅ บันทึกลง DB
+        await WorkOrder.insertMany(workOrders);
+
+        return res.status(201).json({
+            message: "✅ Import สำเร็จ",
+            count: workOrders.length,
+        });
+    } catch (error: any) {
+        console.error("❌ Confirm Import Error:", error.message);
+        return res.status(500).json({ message: "บันทึกไม่สำเร็จ", error: error.message });
+    }
+};
+
+export const downloadWorkOrderTemplate = async (req: any, res: any) => {
+    try {
+        const lang = req.params.lang || "th"; // default ไทย
+        let headers: string[] = [];
+        let sampleData: any[][] = [];
+
+        if (lang === "en") {
+            headers = ["issueDate", "workOrderNumber", "product", "driverName", "driverPhone", "headPlate", "tailPlate", "containerNumber", "companyName", "description"];
+            sampleData = [["2025-10-01", "WO-1001", "Cement", "Somchai", "0812345678", "1ABC123", "2XYZ456", "CONT001", "Porchoen", "Deliver to site"]];
+        } else if (lang === "zh") {
+            headers = ["日期", "订单号", "产品", "司机", "电话", "车头牌照", "车尾牌照", "集装箱号", "公司", "备注"];
+            sampleData = [["2025-10-01", "WO-1001", "水泥", "张三", "0812345678", "1ABC123", "2XYZ456", "CONT001", "博辰公司", "运送到工地"]];
+        } else {
+            headers = ["วันที่ออก", "เลขที่ใบสั่งงาน", "สินค้า", "ชื่อคนขับ", "เบอร์โทร", "ทะเบียนหัว", "ทะเบียนหาง", "เลขตู้", "บริษัท", "รายละเอียด"];
+            sampleData = [["2025-10-01", "WO-1001", "ปูนซีเมนต์", "สมชาย ขับรถ", "0812345678", "1กข1234", "2ขค5678", "CONT001", "ป๋อเฉิน", "ส่งไปไซต์"]];
+        }
+
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+
+        const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+        res.setHeader("Content-Disposition", `attachment; filename=workorder_template_${lang}.xlsx`);
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.send(buffer);
+    } catch (err) {
+        console.error("❌ Error generating template:", err);
+        res.status(500).json({ message: "❌ ไม่สามารถสร้าง template ได้" });
     }
 };
